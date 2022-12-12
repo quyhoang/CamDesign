@@ -1,8 +1,6 @@
-%{
-CAM Design Assistant
-Dwell - Rise - Dwell - Return CAM
-2022-12-07
-%}
+% CAM Design Assistant
+% Dwell - Rise - Dwell - Return CAM
+% 2022-12-07
 
 %%
 clc; close all; clear;
@@ -12,14 +10,14 @@ clc; close all; clear;
 % All values in degree
 % eventAngle = [rise start - rise end - return start- return end]
 eventAngle = [30 70 190 230]; % degree at which the rise/return starts/ends
+h = 5; % stroke in mm
+RPM = 100; % motor velocity in rounds per minutes
+maxPressureAngle_deg = 30; % in degree
 
-h = 15; % stroke in mm
-maxPressureAngle_deg = 25; % in degree
-
-RPM = 200; % motor velocity in rounds per minutes
+m = 2; % follower mass in kg
 
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
-step = 1; % for caculation, the smaller the more accurate, sampling rate in degree
+step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
 
 %============================================
 % PRELIMINARY CALCULATION
@@ -28,6 +26,7 @@ step = 1; % for caculation, the smaller the more accurate, sampling rate in degr
 maxPressureAngle = deg2rad(maxPressureAngle_deg);
 bRise = eventAngle(2) - eventAngle(1) ; %rise period
 bReturn = eventAngle(4) - eventAngle(3) ; %return period
+
 % point in time with acceleration change
 % points of events = [1-rise, 2-rise +1/8, 3-rise +7/8, 4-rise end, 5-return, 6-return +1/8, 7-return +7/8, 8-return end]
 point = [eventAngle(1) eventAngle(1)+bRise/8 eventAngle(1)+7*bRise/8 eventAngle(2) eventAngle(3) eventAngle(3)+bReturn/8 eventAngle(3)+7*bReturn/8 eventAngle(4)];
@@ -47,6 +46,7 @@ primeRadius = Cv*abs(h)/B/tan(maxPressureAngle)-abs(h)/2;
 list_rBase = primeRadius - list_rRoller;
 list_rBase = list_rBase .* (list_rBase>0);
 
+% figure('Name','カムベース円の半径　ｖｓ　ローラー半径');
 figure;
 plot(list_rRoller,list_rBase);
 
@@ -70,9 +70,15 @@ temp = strcat('最大圧角  ', num2str(maxPressureAngle_deg),'^o');
 temp = {'ローラー半径 vs カムベース円の半径';temp};
 title(temp,'Color','b','FontSize',15,'FontWeight','light');
 
+
 % Ask for user input (user can use the previous figure as reference)
-rRoller = input('ローラー半径(mm) を入力してください: '); 
-rBase = input('カムベース円の半径(mm) を入力してください: ');
+rRollerInputMessage =  (['Please refer Figure 1 and input roller radius: ', ...
+    '\n図1を参考して, ローラー半径(mm) を入力してください: \n']);
+rBaseInputMessage = (['Please refer Figure 1 and input cam base radius: ', ...
+    '\n図1を参考して, カムベース円の半径(mm) を入力してください: \n']);
+
+rRoller = input(rRollerInputMessage);
+rBase = input(rBaseInputMessage);
 
 rPrime = rBase + rRoller; %mm - Pitch circle prime radius
 
@@ -116,7 +122,7 @@ sDwe3 = zeros(size(temp));
 s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
 
 % Plot position vs angle in cartesian coordinate
-figure;
+figure('Name','S V A Diagram');
 subplot(3,1,1);
 plot(time,s);
 grid on;
@@ -136,7 +142,6 @@ tit.FontSize = 15;
 % velocity with respect to time
 vv = diff(s)/timeStep;
 vv = [vv s(1)-s(length(s))]; %add the last element to make the length of vv and theta equal
-% figure;
 subplot(3,1,2);
 plot(time,vv);
 grid on;
@@ -145,9 +150,8 @@ xlim([0 T]);
 xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'速度','mm/s'},'FontSize',15,'FontWeight','light','Color','b');
 %title({'';'速度　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-%[tit,] = title({'';'速度　vs　時間'},{['モーター回転速度 ',num2str(RPM),'rpm   ','T = ', num2str(T),'s'];''},'Color','blue');
-temp = strcat('最大速度 ',num2str(max(vv)),' mm/s');
-title(temp,'Color','b','FontSize',15,'FontWeight','light');
+tempV = strcat('最大速度 ',num2str(max(vv)),' mm/s');
+title(tempV ,'Color','b','FontSize',15,'FontWeight','light');
 
 %============================================
 % ACCELERATION
@@ -155,21 +159,23 @@ title(temp,'Color','b','FontSize',15,'FontWeight','light');
 % acceleration with respect to time
 aa = diff(vv)/timeStep;
 aa = [aa vv(1)-vv(length(vv))];
-% figure;
 subplot(3,1,3);
 plot(time,aa);
-grid on;
-grid minor;
+grid on; grid minor;
+
 xlim([0 T]);
 xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'加速','mm/s^2'},'FontSize',15,'FontWeight','light','Color','b');
-%title({'';'加速　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-temp = strcat('最大加速  ', num2str(max(aa)),' mm/s^2');
-title(temp,'Color','b','FontSize',15,'FontWeight','light');
 
-%%
-disp('Enter キーを押して続行します');
-pause; % Wait for user to press enter to proceed
+%title({'';'加速　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
+tempA = strcat('最大加速  ', num2str(max(aa)),' mm/s^2');
+title(tempA,'Color','b','FontSize',15,'FontWeight','light');
+
+disp(tempV)
+disp(tempA)
+
+input(['\n','何かキーを押すと圧角を表示します。,\n'])
+% Wait for user response to proceed
 %%
 %============================================
 % PRESSURE ANGLE 圧角
@@ -185,8 +191,7 @@ tanPressureAngle = v_theta./pitch_radius;
 
 pressureAngle = rad2deg(atan(tanPressureAngle));
 
-figure;
-
+figure('Name','圧角・位置 vs 回転角度');
 yyaxis left
 angleColor = 'b';
 plot(theta, pressureAngle,'Color',angleColor);
@@ -211,15 +216,14 @@ ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
 ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
 hold on
 
-temp = strcat('最大圧角 ',num2str(max(pressureAngle)),'^o');
+tempP = strcat('最大圧角 ',num2str(max(pressureAngle)),'^o');
 %  title(temp,'Color','b','FontSize',15,'FontWeight','light');
 
-title({'';'圧角・位置　vs　回転角度';temp;''},'Color','b','FontSize',15,'FontWeight','light');
-%%
+title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
 
-
-disp('Enter キーを押して続行します');
-pause; % Wait for user to press enter to proceed
+disp(strcat('最大圧角: ',num2str(max(pressureAngle)),'度'));
+input(['\n','何かキーを押すとカムのピッチ円を表示します。','\n'])
+% Wait for user respond to proceed
 %============================================
 % RADIUS OF CURVATURE 曲率半径
 %============================================
@@ -233,7 +237,7 @@ pause; % Wait for user to press enter to proceed
 pitchColor = [0.8500 0.3250 0.0980];
 camColor = 'b'; % cam profile color
 % Plot position in polar coordinate
-figure;
+figure('Name','極座標のカム ピッチ カーブ');
 theta2 = deg2rad(theta);
 polarplot(theta2,s,'Color',pitchColor);
 grid on;
@@ -242,16 +246,15 @@ grid on;
 % Converting Polar to Cartesian Coordinate System
 [x,y] = pol2cart(theta2,s);
 
-%%
-disp('Enter キーを押して続行します');
-pause; % Wait for user to press enter to proceed
+input(['何かキーを押すとカムの輪郭を表示します。','\n'])
+% Wait for user response to proceed
 %%
 %============================================
 % CAM PROFILE 
 %============================================
 % Cam Machining process
-figure;
 
+figure('Name','カムの輪郭加工');
 sampleRate = round(sampleRate*length(theta2)/360);
 x_sample = transpose(x(1:sampleRate:length(x)));
 y_sample = transpose(y(1:sampleRate:length(y)));
@@ -267,19 +270,27 @@ hold off;
 axis equal;
 grid on;
 
-for k = 2:1:length(x_sample)
-    p = viscircles([x_sample(k),y_sample(k)],rRoller,'LineWidth',1,'Color',rollerColor);
-    drawnow
+% Machining process
+
+prompt = "Show machining process? 加工工程を表示しますか? y/n [n]: ";
+txt = input(prompt,"s");
+
+% Animate machining process if user input 'y'
+% otherwise (input 'n' or just Enter), skip
+if (txt == 'y')
+    for k = 2:1:length(x_sample)
+        p = viscircles([x_sample(k),y_sample(k)],rRoller,'LineWidth',1,'Color',rollerColor);
+        drawnow
+    end
 end
 
 
-% disp('Enter キーを押して続行します'); 
-% pause; % Wait for user to press enter to proceed
 % ==========================
 % Draw roller around cam curve and on pitch curve 
 % sample rate is defined in input region
 
-figure;
+% figure('Name','カムの輪郭');
+figure
 viscircles(centers,radii,'LineWidth',1,'color',rollerColor);
 axis equal;
 grid on;
@@ -305,6 +316,73 @@ end
 hold on;
 plot(camSurfX,camSurfY,'color','b')
 
+
+% Export data for using in 3D CAD package
+disp('CreoAutomation.exe がアクティブで、txt データが Creo 作業ディレクトリに保存されている場合、「gcam」を押して Enter を押すと、カムの 3D モデルが作成されます。');
+prompt = "Export data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
+txt = input(prompt,"s");
+
+% Animate machining process if user input 'y'
+% otherwise (input 'n' or just Enter), skip
+if (txt == 'y')
+    x_cord = transpose(camSurfX);
+    y_cord = transpose(camSurfY);
+    z_cord = zeros(length(theta2),1);
+    
+    camProfile = [x_cord y_cord z_cord];
+%     writematrix(camProfile,'camProfile.xlsx');
+    writematrix(camProfile,'camProfile.txt','Delimiter','tab');
+    
+end
+
+
+%% 
+%============================================
+% MOTOR TORQUE 
+%============================================
+
+rPitchVec = [x;y];
+rPitchVec3D = [rPitchVec; zeros(1,length(x))]/1000; %convert from mm to m
+
+% Unit vectors
+unitVecX = zeros(size(x));
+unitVecY = zeros(size(x));
+
+% Boundary. Note that the first and the last points on pitch curve are the
+% same
+
+[unitVecX(1),unitVecY(1)] = normalOut([x(length(x)-1) x(1) x(2)],[y(length(y)-1) y(1) y(2)],1); 
+[unitVecX(length(x)),unitVecY(length(y))] = normalOut([x(length(x)-1) x(length(x)) x(2)],[y(length(y)-1) y(length(y)) y(2)],1);
+
+for k = 1:1:length(x)-2
+X = x(k:1:k+2);
+Y = y(k:1:k+2);
+[unitVecX(k+1),unitVecY(k+1)] = normalOut(X,Y,1);
+end
+
+
+
+unitVec = [unitVecX; unitVecY];
+unitVec = unitVec-rPitchVec; 
+
+unitVec3D = [unitVec;zeros(1,length(unitVecX))]; 
+
+
+
+L1 = cross(rPitchVec3D,unitVec3D);
+L2 = vecnorm(L1);
+L3 = m*(2*aa/1000 + 9.8*0.7);
+cosPressureAngle = sqrt(1./(1+tanPressureAngle.^2)); %cos2 = 1/(1+tan2)
+L = L3.*L2./cosPressureAngle;
+plot(theta,L);
+
+
+%%
+% ====================================
+% ANIMATING CAM ROTATION
+% ====================================
+
+
 % Visualize angle of pressure
 angleEndPointX = zeros(size(x));
 angleEndPointY = zeros(size(x));
@@ -321,148 +399,118 @@ Y = y(k:1:k+2);
 [angleEndPointX(k+1),angleEndPointY(k+1)] = normalOut(X,Y,angleLineFactor*rRoller);
 end
 
+% Cam motion simulation
+disp('')
+prompt = "Show cam motion? カムの動きのシミュレーションを表示しますか? y/n [n]: ";
+txt = input(prompt,"s");
 
-%%
-disp('Enter キーを押して続行します');
-pause; % Wait for user to press enter to proceed to animation
-%%
-% ====================================
-% ANIMATING CAM ROTATION
-% ====================================
-
-
-% Pitch Circle
-figure;
-
-for loopNumber = 1:3
-
-hold on
-plot(0,0,'o','MarkerFaceColor','r');
-
-rotatedPitch = rotateCw([x;y],-pi/2);
-pl = plot(rotatedPitch(1,:),rotatedPitch(2,:),'color',pitchColor);
-axis equal;
-maxDim = rBase + abs(h) + 2*rRoller + 10;
-xlim([-maxDim maxDim]);
-ylim([-maxDim maxDim]);
-
-hold on;
-grid on;
-grid minor;
-pl.XDataSource = 'xx';
-pl.YDataSource = 'yy';
-
-
-% Cam Profile
-rotatedCam = rotateCw([camSurfX;camSurfY],-pi/2);
-pl2 = plot(rotatedCam(1,:),rotatedCam(2,:),'color',camColor);
-axis equal;
-maxDim = rBase + abs(h) + 2*rRoller + 10;
-xlim([-maxDim maxDim]);
-ylim([-maxDim maxDim]);
-
-hold on;
-pl2.XDataSource = 'xx2';
-pl2.YDataSource = 'yy2';
-
-% Roller
-
-index = linspace(0,2*pi,100);
-xC = rRoller*cos(index);
-yC = rRoller*sin(index) + s(1);
-pl3 = plot(xC,yC,'color',rollerColor);
-pl3.YDataSource = 'yC';
-
-rollerCenterY = s(1);
-pl4 = plot(0,rollerCenterY,'o','MarkerFaceColor',[0 0.4470 0.7410]); % Roller center
-pl4.YDataSource = 'rollerCenterY';
-
-maxDim = rBase + abs(h) + 2*rRoller + 10;
-xlim([-maxDim maxDim]);
-ylim([-maxDim maxDim]);
-hold on;
-
-% Pressure angle
-rollerCenterY_angle = s(1)+angleLineFactor*rRoller;
-angle1y = [rollerCenterY rollerCenterY_angle];
-pl5 = plot([0 0],angle1y,'MarkerFaceColor',[0 0.4470 0.7410]); 
-pl5.YDataSource = 'angle1y';
-hold on;
-
-rotatedAngleEnd = rotateCw([angleEndPointX(1);angleEndPointY(1)],-pi/2);
-angle2x = [0 rotatedAngleEnd(1)];
-angle2y = [rollerCenterY rotatedAngleEnd(2)];
-pl6 = plot(angle2x,angle2y,'MarkerFaceColor',[0 0.4470 0.7410]); 
-pl6.XDataSource = 'angle2x';
-pl6.YDataSource = 'angle2y';
-
-% startAngle = -pi/2;
-% stopAngle = startAngle + 2*pi;
-% for i = startAngle:2*pi/360:stopAngle
-
-
-for i = 1:length(theta2)
-j = theta2(i)-pi/2;
-
-rotatedPitch = rotateCw([x;y],j);
-xx = rotatedPitch(1,:);
-yy = rotatedPitch(2,:);
-
-rotatedCam = rotateCw([camSurfX;camSurfY],j);
-xx2 = rotatedCam(1,:);
-yy2 = rotatedCam(2,:);
-
-yC = rRoller*sin(index) + s(i);
-rollerCenterY = s(i);
-rollerCenterY_angle = s(i)+angleLineFactor*rRoller;
-angle1y = [rollerCenterY rollerCenterY_angle];
-
-rotatedAngleEnd = rotateCw([angleEndPointX(i);angleEndPointY(i)],j);
-angle2x = [0 rotatedAngleEnd(1)];
-angle2y = [rollerCenterY rotatedAngleEnd(2)];
-
-temp5 = strcat('圧角　',num2str(pressureAngle(i)),'^o     ');
-temp2 = strcat('変位　',num2str(s(i)-rPrime),' mm     ');
-temp3 = strcat('回転角度　',num2str(theta(i)),'^o   ');
-updatedTitle = {temp3; temp2; temp5};
-[titleAni,] = title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
-
-temp4 = strcat('位置　',num2str(s(i)),' mm     ');
-ylabel(temp4,'Color',angleColor,'FontSize',15);
-temp1 = strcat('経過時間　',num2str(time(i)),' s     ');
-xlabel(temp1,'Color',angleColor,'FontSize',15);
-
-
-
-refreshdata
-pause(0.001)
-end
-
+% Animate machining process if user input 'y'
+% otherwise (input 'n' or just Enter), skip
+if (txt == 'y')
+    
+    figure('Name','カムの動きのシミュレーション');
+    for loopNumber = 1:3
+    
+    hold on
+    plot(0,0,'o','MarkerFaceColor','r');
+    % Pitch Circle
+    rotatedPitch = rotateCw([x;y],-pi/2);
+    pl = plot(rotatedPitch(1,:),rotatedPitch(2,:),'color',pitchColor);
+    axis equal;
+    maxDim = rBase + abs(h) + 2*rRoller + 10;
+    xlim([-maxDim maxDim]);
+    ylim([-maxDim maxDim]);
+    
+    hold on;
+    grid on;
+    grid minor;
+    pl.XDataSource = 'xx';
+    pl.YDataSource = 'yy';
+    
+    
+    % Cam Profile
+    rotatedCam = rotateCw([camSurfX;camSurfY],-pi/2);
+    pl2 = plot(rotatedCam(1,:),rotatedCam(2,:),'color',camColor);
+    axis equal;
+    maxDim = rBase + abs(h) + 2*rRoller + 10;
+    xlim([-maxDim maxDim]);
+    ylim([-maxDim maxDim]);
+    
+    hold on;
+    pl2.XDataSource = 'xx2';
+    pl2.YDataSource = 'yy2';
+    
+    % Roller
+    
+    index = linspace(0,2*pi,100);
+    xC = rRoller*cos(index);
+    yC = rRoller*sin(index) + s(1);
+    pl3 = plot(xC,yC,'color',rollerColor);
+    pl3.YDataSource = 'yC';
+    
+    rollerCenterY = s(1);
+    pl4 = plot(0,rollerCenterY,'o','MarkerFaceColor',[0 0.4470 0.7410]); % Roller center
+    pl4.YDataSource = 'rollerCenterY';
+    
+    maxDim = rBase + abs(h) + 2*rRoller + 10;
+    xlim([-maxDim maxDim]);
+    ylim([-maxDim maxDim]);
+    hold on;
+    
+    % Pressure angle
+    rollerCenterY_angle = s(1)+angleLineFactor*rRoller;
+    angle1y = [rollerCenterY rollerCenterY_angle];
+    pl5 = plot([0 0],angle1y,'MarkerFaceColor',[0 0.4470 0.7410]); 
+    pl5.YDataSource = 'angle1y';
+    hold on;
+    
+    rotatedAngleEnd = rotateCw([angleEndPointX(1);angleEndPointY(1)],-pi/2);
+    angle2x = [0 rotatedAngleEnd(1)];
+    angle2y = [rollerCenterY rotatedAngleEnd(2)];
+    pl6 = plot(angle2x,angle2y,'MarkerFaceColor',[0 0.4470 0.7410]); 
+    pl6.XDataSource = 'angle2x';
+    pl6.YDataSource = 'angle2y';
+    
+    % Animation 
+    for i = 1:length(theta2)
+    j = theta2(i)-pi/2;
+    
+    rotatedPitch = rotateCw([x;y],j);
+    xx = rotatedPitch(1,:);
+    yy = rotatedPitch(2,:);
+    
+    rotatedCam = rotateCw([camSurfX;camSurfY],j);
+    xx2 = rotatedCam(1,:);
+    yy2 = rotatedCam(2,:);
+    
+    yC = rRoller*sin(index) + s(i);
+    rollerCenterY = s(i);
+    rollerCenterY_angle = s(i)+angleLineFactor*rRoller;
+    angle1y = [rollerCenterY rollerCenterY_angle];
+    
+    rotatedAngleEnd = rotateCw([angleEndPointX(i);angleEndPointY(i)],j);
+    angle2x = [0 rotatedAngleEnd(1)];
+    angle2y = [rollerCenterY rotatedAngleEnd(2)];
+    
+    temp5 = strcat('圧角　',num2str(pressureAngle(i)),'^o     ');
+    temp2 = strcat('変位　',num2str(s(i)-rPrime),' mm     ');
+    temp3 = strcat('回転角度　',num2str(theta(i)),'^o   ');
+    updatedTitle = {temp3; temp2; temp5};
+    [titleAni,] = title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
+    
+    temp4 = strcat('位置　',num2str(s(i)),' mm     ');
+    ylabel(temp4,'Color',angleColor,'FontSize',15);
+    temp1 = strcat('経過時間　',num2str(time(i)),' s     ');
+    xlabel(temp1,'Color',angleColor,'FontSize',15);
+    
+    refreshdata
+    pause(0.001)
+    end
+    
+    end
 end
 %%
 
-
-% pause; % Wait for user to press enter to proceed to animation
-% prompt = "Show machining process? Y/N [Y]: ";
-% txt = input(prompt,"s");
-% if isempty(txt)
-%     txt = 'Y';
-% end
-% 
-% if (txt == 'n')
-%     return
-% end
-
-
-% Export Cam Profile to Excel as XYZ Coordinates
-% x_cord = transpose(camSurfX);
-% y_cord = transpose(camSurfY);
-% z_cord = zeros(length(theta2),1);
-% 
-% cam_profile = [x_cord y_cord z_cord];
-
-% writematrix(cam_profile,'cam_profile.xlsx');
-% writematrix(cam_profile,'cam_profile.txt');
 
 function Y = rotateCw(X,theta)
 % rotate clockwise
