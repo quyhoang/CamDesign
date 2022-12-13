@@ -10,8 +10,8 @@ clc; close all; clear;
 % All values in degree
 % eventAngle = [rise start - rise end - return start- return end]
 eventAngle = [30 70 190 230]; % degree at which the rise/return starts/ends
-h = 5; % stroke in mm
-RPM = 100; % motor velocity in rounds per minutes
+h = 15; % stroke in mm
+RPM = 200; % motor velocity in rounds per minutes
 maxPressureAngle_deg = 30; % in degree
 
 m = 2; % follower mass in kg
@@ -122,7 +122,7 @@ sDwe3 = zeros(size(temp));
 s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
 
 % Plot position vs angle in cartesian coordinate
-figure('Name','S V A Diagram');
+figure;
 subplot(3,1,1);
 plot(time,s);
 grid on;
@@ -132,7 +132,7 @@ xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
 ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
 % legend("位置 s");
-[tit,] = title({'';'位置・速度・加速　vs　時間'},{['モーター回転速度 ',num2str(RPM),'rpm   ','T = ', num2str(T),'s'];''},...
+[tit,] = title({'';'S V A Diagram'},{['モーター回転速度 ',num2str(RPM),'rpm   ','T = ', num2str(T),'s'];''},...
     'Color','blue');
 tit.FontSize = 15;
 
@@ -174,7 +174,7 @@ title(tempA,'Color','b','FontSize',15,'FontWeight','light');
 disp(tempV)
 disp(tempA)
 
-input(['\n','何かキーを押すと圧角を表示します。,\n'])
+input(['\n','何かキーを押すと圧角を表示します。\n'])
 % Wait for user response to proceed
 %%
 %============================================
@@ -191,7 +191,8 @@ tanPressureAngle = v_theta./pitch_radius;
 
 pressureAngle = rad2deg(atan(tanPressureAngle));
 
-figure('Name','圧角・位置 vs 回転角度');
+% figure('Name','圧角・位置 vs 回転角度');
+figure;
 yyaxis left
 angleColor = 'b';
 plot(theta, pressureAngle,'Color',angleColor);
@@ -237,7 +238,8 @@ input(['\n','何かキーを押すとカムのピッチ円を表示します。'
 pitchColor = [0.8500 0.3250 0.0980];
 camColor = 'b'; % cam profile color
 % Plot position in polar coordinate
-figure('Name','極座標のカム ピッチ カーブ');
+% figure('Name','極座標のカム ピッチ カーブ');
+figure;
 theta2 = deg2rad(theta);
 polarplot(theta2,s,'Color',pitchColor);
 grid on;
@@ -254,6 +256,7 @@ input(['何かキーを押すとカムの輪郭を表示します。','\n'])
 %============================================
 % Cam Machining process
 
+% Draw roller around cam curve and on pitch curve, sample rate is defined in input region
 figure('Name','カムの輪郭加工');
 sampleRate = round(sampleRate*length(theta2)/360);
 x_sample = transpose(x(1:sampleRate:length(x)));
@@ -266,15 +269,11 @@ plot(x,y,'Color',pitchColor);
 hold on;
 rollerColor = [0.4660 0.6740 0.1880];
 p = viscircles([x_sample(1),y_sample(1)],rRoller,'LineWidth',1,'Color',rollerColor);
-hold off;
-axis equal;
-grid on;
+hold off; axis equal; grid on;
 
 % Machining process
-
 prompt = "Show machining process? 加工工程を表示しますか? y/n [n]: ";
 txt = input(prompt,"s");
-
 % Animate machining process if user input 'y'
 % otherwise (input 'n' or just Enter), skip
 if (txt == 'y')
@@ -284,38 +283,14 @@ if (txt == 'y')
     end
 end
 
-
-% ==========================
-% Draw roller around cam curve and on pitch curve 
-% sample rate is defined in input region
-
-% figure('Name','カムの輪郭');
-figure
+% figure; % figure('Name','カムの輪郭');
 viscircles(centers,radii,'LineWidth',1,'color',rollerColor);
-axis equal;
-grid on;
-grid minor;
-hold on;
+axis equal; hold on; grid on; grid minor;
 plot(x,y,'color','r');
 
 % Plot cam profile
-camSurfX = zeros(size(x));
-camSurfY = zeros(size(x));
-
-% Boundary. Note that the first and the last points on pitch curve are the
-% same
-[camSurfX(1),camSurfY(1)] = normalIn([x(length(x)-1) x(1) x(2)],[y(length(y)-1) y(1) y(2)],rRoller); 
-[camSurfX(length(x)),camSurfY(length(y))] = normalIn([x(length(x)-1) x(length(x)) x(2)],[y(length(y)-1) y(length(y)) y(2)],rRoller);
-
-for k = 1:1:length(x)-2
-X = x(k:1:k+2);
-Y = y(k:1:k+2);
-[camSurfX(k+1),camSurfY(k+1)] = normalIn(X,Y,rRoller);
-end
-
-hold on;
+[camSurfX, camSurfY] = offsetIn(x,y,rRoller);
 plot(camSurfX,camSurfY,'color','b')
-
 
 % Export data for using in 3D CAD package
 disp('CreoAutomation.exe がアクティブで、txt データが Creo 作業ディレクトリに保存されている場合、「gcam」を押して Enter を押すと、カムの 3D モデルが作成されます。');
@@ -332,75 +307,33 @@ if (txt == 'y')
     camProfile = [x_cord y_cord z_cord];
 %     writematrix(camProfile,'camProfile.xlsx');
     writematrix(camProfile,'camProfile.txt','Delimiter','tab');
-    
 end
 
 
+input(['何かキーを押すとモータートルクを表示します。','\n'])
+% Wait for user response to proceed
 %% 
 %============================================
 % MOTOR TORQUE 
 %============================================
-
-rPitchVec = [x;y];
-rPitchVec3D = [rPitchVec; zeros(1,length(x))]/1000; %convert from mm to m
-
-% Unit vectors
-unitVecX = zeros(size(x));
-unitVecY = zeros(size(x));
-
-% Boundary. Note that the first and the last points on pitch curve are the
-% same
-
-[unitVecX(1),unitVecY(1)] = normalOut([x(length(x)-1) x(1) x(2)],[y(length(y)-1) y(1) y(2)],1); 
-[unitVecX(length(x)),unitVecY(length(y))] = normalOut([x(length(x)-1) x(length(x)) x(2)],[y(length(y)-1) y(length(y)) y(2)],1);
-
-for k = 1:1:length(x)-2
-X = x(k:1:k+2);
-Y = y(k:1:k+2);
-[unitVecX(k+1),unitVecY(k+1)] = normalOut(X,Y,1);
-end
-
-
-
-unitVec = [unitVecX; unitVecY];
-unitVec = unitVec-rPitchVec; 
-
-unitVec3D = [unitVec;zeros(1,length(unitVecX))]; 
-
-
-
-L1 = cross(rPitchVec3D,unitVec3D);
-L2 = vecnorm(L1);
-L3 = m*(2*aa/1000 + 9.8*0.7);
-cosPressureAngle = sqrt(1./(1+tanPressureAngle.^2)); %cos2 = 1/(1+tan2)
-L = L3.*L2./cosPressureAngle;
+% suppose that the spring force generate an acceleration at least equal to
+% that by motor, and friction coefficient is 0.7
+parallelForce = m*(2*aa/1000 + 9.8*0.7); % in N
+perpendicularForce = parallelForce.*tanPressureAngle;
+L = s/1000.*perpendicularForce;
+figure;
 plot(theta,L);
-
 
 %%
 % ====================================
 % ANIMATING CAM ROTATION
 % ====================================
 
-
-% Visualize angle of pressure
-angleEndPointX = zeros(size(x));
-angleEndPointY = zeros(size(x));
-
-% Boundary. Note that the first and the last points on pitch curve are the
-% same
 angleLineFactor = 4;
-[angleEndPointX(1),angleEndPointY(1)] = normalOut([x(length(x)-1) x(1) x(2)],[y(length(y)-1) y(1) y(2)],angleLineFactor*rRoller); 
-[angleEndPointX(length(x)),angleEndPointY(length(y))] = normalOut([x(length(x)-1) x(length(x)) x(2)],[y(length(y)-1) y(length(y)) y(2)],angleLineFactor*rRoller);
+[angleEndPointX,angleEndPointY] = offsetIn(x,y,-angleLineFactor*rRoller);
 
-for k = 1:1:length(x)-2
-X = x(k:1:k+2);
-Y = y(k:1:k+2);
-[angleEndPointX(k+1),angleEndPointY(k+1)] = normalOut(X,Y,angleLineFactor*rRoller);
-end
 
 % Cam motion simulation
-disp('')
 prompt = "Show cam motion? カムの動きのシミュレーションを表示しますか? y/n [n]: ";
 txt = input(prompt,"s");
 
@@ -409,7 +342,7 @@ txt = input(prompt,"s");
 if (txt == 'y')
     
     figure('Name','カムの動きのシミュレーション');
-    for loopNumber = 1:3
+    for loopNumber = 1:1
     
     hold on
     plot(0,0,'o','MarkerFaceColor','r');
@@ -514,7 +447,6 @@ end
 
 function Y = rotateCw(X,theta)
 % rotate clockwise
-
 rotMat = [cos(theta) sin(theta); -sin(theta) cos(theta)];
 Y = rotMat * X;
 end
@@ -527,7 +459,8 @@ function [xo,yo] = normalIn(x,y,R)
 % This function return the coordinates of point D such that
 % * DB is perpendicular to AC
 % * DB has length R
-% * D is on the left hand side when moving on the curve ABC from A to C
+% * D is on the right hand side when moving on the curve ABC from A to C
+% if R is positive and left hand side if R is negative
 
 % calculate normal vector <a,b>
 a = y(1)-y(3);
@@ -539,24 +472,33 @@ xo = k*a + x(2);
 yo = k*b + y(2);
 end
 
-function [xo,yo] = normalOut(x,y,R)
-% x and y are row vector of length 3 (longer vectors don't cause problem,
-% but only the first 3 elements will be used. 
+function [xOffset,yOffset] = offsetIn(x,y,R)
+% Generate 2 vectors holding coordinates of offset curve by R from a closed
+% curve. 
+% If R is positive, the offset curve will be inside the original curve. 
+% If R is negative, the offset curve will be outside the original curve.
 
-% Call the three point represented by x and y A, B and C
-% This function return the coordinates of point D such that
-% * DB is perpendicular to AC
-% * DB has length R
-% * D is on the right hand side when moving on the curve ABC from A to C
+L = length(x); % the length of both vectors
+% Check whether the input is closed
+if (x(1) ~= x(L))
+    disp("The input is not a closed curve. The function will terminate.")
+    return
+end
 
-% calculate normal vector <a,b>
-a = y(1)-y(3);
-b = x(3)-x(1);
-k = -R/sqrt(a^2+b^2); 
+xOffset = zeros(size(x));
+yOffset = zeros(size(x));
 
-% temporary factor
-xo = k*a + x(2);
-yo = k*b + y(2);
+% Boundary. Note that the first and the last points on pitch curve are the
+% same
+[xOffset(1),yOffset(1)] = normalIn([x(L-1) x(1) x(2)],[y(length(y)-1) y(1) y(2)],R); 
+[xOffset(L),yOffset(L)] = normalIn([x(L-1) x(L) x(2)],[y(L-1) y(L) y(2)],R);
+
+for k = 1:1:L-2
+X = x(k:1:k+2);
+Y = y(k:1:k+2);
+[xOffset(k+1),yOffset(k+1)] = normalIn(X,Y,R);
+end
+
 end
 
 
