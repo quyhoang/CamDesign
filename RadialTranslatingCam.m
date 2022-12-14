@@ -8,14 +8,17 @@ clc; close all; clear;
 % INPUT 入力
 %============================================
 % All values in degree
+
+% Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
 eventAngle = [30 70 190 230]; % degree at which the rise/return starts/ends
 h = 15; % stroke in mm
 RPM = 200; % motor velocity in rounds per minutes
-maxPressureAngle_deg = 30; % in degree
-
 m = 2; % follower mass in kg
 
+% recommended values
+maxPressureAngle_deg = 25; % in degree
+kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
 step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
 
@@ -158,17 +161,17 @@ title(tempV ,'Color','b','FontSize',15,'FontWeight','light');
 %============================================
 % acceleration with respect to time
 aa = diff(vv)/timeStep;
-aa = [aa vv(1)-vv(length(vv))];
+aa = [aa vv(1)-vv(length(vv))]/1000;
 subplot(3,1,3);
 plot(time,aa);
 grid on; grid minor;
 
 xlim([0 T]);
 xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
-ylabel({'加速','mm/s^2'},'FontSize',15,'FontWeight','light','Color','b');
+ylabel({'加速','m/s^2'},'FontSize',15,'FontWeight','light','Color','b');
 
 %title({'';'加速　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-tempA = strcat('最大加速  ', num2str(max(aa)),' mm/s^2');
+tempA = strcat('最大加速  ', num2str(max(aa)),' m/s^2');
 title(tempA,'Color','b','FontSize',15,'FontWeight','light');
 
 disp(tempV)
@@ -293,8 +296,11 @@ plot(x,y,'color','r');
 plot(camSurfX,camSurfY,'color','b')
 
 % Export data for using in 3D CAD package
-disp('CreoAutomation.exe がアクティブで、txt データが Creo 作業ディレクトリに保存されている場合、「gcam」を押して Enter を押すと、カムの 3D モデルが作成されます。');
-prompt = "Export data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
+prompt1 = (['CreoAutomation.exe がアクティブで、' ...
+    '\ntxt データが Creo 作業ディレクトリに保存されている場合、' ...
+    '\n「gcam」を押して Enter を押すと、' ...
+    '\nカムの 3D モデルが作成されます。']);
+prompt = prompt1 + "\n\nExport data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
 txt = input(prompt,"s");
 
 % Animate machining process if user input 'y'
@@ -318,11 +324,52 @@ input(['何かキーを押すとモータートルクを表示します。','\n'
 %============================================
 % suppose that the spring force generate an acceleration at least equal to
 % that by motor, and friction coefficient is 0.7
-parallelForce = m*(2*aa/1000 + 9.8*0.7); % in N
-perpendicularForce = parallelForce.*tanPressureAngle;
-L = s/1000.*perpendicularForce;
+% kFriction = 1;
+fFriction = kFriction * m * 9.8; 
+% Friction force is in opposite direction of velocity
+temp1 = -(vv>0);
+temp2 = (vv<0);
+fFrictionDirection = temp1 + temp2;
+fFriction = fFriction.*fFrictionDirection;
+
+deltaXoInput = input("最初ばね変位 (mm): ");
+deltaXo = deltaXoInput/1000; % convert to m
+% deltaXo = 0.001; %m
+strokeT = (s-rPrime)/1000; % m
+deltaX = strokeT + deltaXo; % spring displacement 
+
+minFspring = m*aa - fFriction; % positive direction is upward, measured in N
+minKspring = -minFspring./deltaX;
+minAcceptableKspring = max(minKspring); 
+
 figure;
-plot(theta,L);
+maxDeltaX = h+deltaXoInput:1:3*h;
+maxFspring = minAcceptableKspring/1000.*maxDeltaX;
+plot(maxDeltaX,maxFspring);
+xlabel('Fmax (mm)') ; % misumi nomenclature
+xlim([h+deltaXoInput 3*h]);
+ylabel('Nmax (N)') ;
+grid on; grid minor;
+Fmax = input("図を参照して　Fmaxを選んでください：");
+
+prompt = strcat('Nmax は ',num2str(Fmax*minAcceptableKspring/1000),' 以上だといいです。');
+disp('図を参照して　Nmax を選んでください：');
+Nmax = input(prompt);
+
+selectedKspring = Nmax/Fmax*1000;
+
+fSpring = -selectedKspring.*deltaX;
+% plot(fSpring); % N
+
+
+parallelForce = m*aa - fSpring - fFriction; % in N
+perpendicularForce = parallelForce.*tanPressureAngle;
+torque = s/1000.*perpendicularForce;
+figure;
+plot(theta,torque);
+xlabel('角度') ; % misumi nomenclature
+ylabel('トルク (Nm)') ;
+grid on; grid minor;
 
 %%
 % ====================================
