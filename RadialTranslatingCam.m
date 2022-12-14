@@ -11,13 +11,13 @@ clc; close all; clear;
 
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [30 70 190 230]; % degree at which the rise/return starts/ends
+eventAngle = [50 100 190 230]; % degree at which the rise/return starts/ends
 h = 15; % stroke in mm
 RPM = 200; % motor velocity in rounds per minutes
 m = 2; % follower mass in kg
 
 % recommended values
-maxPressureAngle_deg = 25; % in degree
+maxPressureAngle_deg = 20; % in degree
 kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
 step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
@@ -350,9 +350,15 @@ xlabel('Fmax (mm)') ; % misumi nomenclature
 xlim([h+deltaXoInput 3*h]);
 ylabel('Nmax (N)') ;
 grid on; grid minor;
-Fmax = input("図を参照して　Fmaxを選んでください：");
 
-prompt = strcat('Nmax は ',num2str(Fmax*minAcceptableKspring/1000),' 以上だといいです。');
+strminKspring = num2str(minAcceptableKspring/1000);
+disp(strcat('最小　K＝ ',strminKspring,'N/m'));
+
+prompt = strcat('Fmax は ',num2str(h+deltaXoInput),'mm 以上です。');
+disp('図を参照して Fmax を選んでください：');
+Fmax = input(prompt);
+
+prompt = strcat('Nmax は ',num2str(Fmax*minAcceptableKspring/1000),'N 以上です。');
 disp('図を参照して　Nmax を選んでください：');
 Nmax = input(prompt);
 
@@ -369,7 +375,10 @@ figure;
 plot(theta,torque);
 xlabel('角度') ; % misumi nomenclature
 ylabel('トルク (Nm)') ;
+torqueTitle = strcat('最大トルク  ', num2str(max(torque)),' Nm');
+title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
 grid on; grid minor;
+disp(torqueTitle);
 
 %%
 % ====================================
