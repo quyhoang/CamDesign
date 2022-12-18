@@ -318,8 +318,12 @@ plot(camSurfX,camSurfY,'color','b')
 
 
 % Export data for using in 3D CAD package
-disp('CreoAutomation.exe がアクティブで、txt データが Creo 作業ディレクトリに保存されている場合、「gcam」を押して Enter を押すと、カムの 3D モデルが作成されます。');
-prompt = "Export data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
+
+prompt = "\nCreoAutomation.exe がアクティブで、" + ...
+    "\ntxt データが Creo 作業ディレクトリに保存されている場合、" + ...
+    "\n「gcam」を押して Enter を押すと、" + ...
+    "\nカムの 3D モデルが作成されます。" + ...
+    "\nExport data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
 txt = input(prompt,"s");
 
 % Animate machining process if user input 'y'
@@ -518,6 +522,11 @@ function Y = rotateCw(X,theta)
 rotMat = [cos(theta) sin(theta); -sin(theta) cos(theta)];
 Y = rotMat * X;
 end
+
+
+function [x,y] = normalOffset(x,y,R)
+end
+
 
 function [xo,yo] = normalIn(x,y,R)
 % x and y are row vector of length 3 (longer vectors don't cause problem,
