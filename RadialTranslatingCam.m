@@ -5,6 +5,8 @@
 
 %%
 clc; close all; clear;
+set(0,'DefaultFigureWindowStyle','docked')
+% set(0,'DefaultFigureWindowStyle','normal')
 %============================================
 % INPUT 入力
 %============================================
