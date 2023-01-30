@@ -1,6 +1,6 @@
 % CAM Design Assistant
 % Dwell - Rise - Dwell - Return oscillating CAM
-% 2022-12-07
+% 2023-01-30
 
 %%
 clc; close all; 
@@ -17,8 +17,10 @@ rPrime = 0;
 % eventAngle = [rise start - rise end - return start- return end]
 eventAngle = [80 120 190 230]; % degree at which the rise/return starts/ends
 h = 10; % stroke in mm
-l_roller = 40; % distance from arm rotating axis to roller center
+l_roller = 60; % distance from arm rotating axis to roller center
 l_load = 80; % distance from arm center to load
+
+rRoller = 8;
 
 rocker2cam = 80; % distance between rocker arm and cam axes
 RPM = 200; % motor velocity in rounds per minutes
@@ -30,7 +32,10 @@ kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
 step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
 
-
+% graphic color
+rollerColor = [0.4660 0.6740 0.1880];
+pitchColor = [0.8500 0.3250 0.0980];
+camColor = 'b';
 %============================================
 % PRELIMINARY CALCULATION
 %============================================
@@ -148,13 +153,167 @@ thetaRadian = deg2rad(theta);
 
 roller_position1 = l_roller*exp(s2rad*1i);  %unregulated position, rocker is at center
 roller_position = roller_position1 - rocker2cam; % cam is at center, rocker axis is at (-rocker2cam,0)
-camProfile = roller_position.*exp(thetaRadian*1i); 
+pitchCurve = roller_position.*exp(thetaRadian*1i); 
 % move points counterclockwise, this means the cam rotates clockwise 
+
+%%
+%============================================
+% ANIMATION 
+%============================================
+
 figure
-plot(camProfile)
-hold on
-plot(roller_position,'o')
-axis equal; grid on;
+
+% Draw rocker arm
+armCenterX = -rocker2cam;
+armCenterY = 0;
+rollerCenterX = real(roller_position);
+rollerCenterY = imag(roller_position);
+
+armX = [armCenterX,rollerCenterX(1)];
+armY = [armCenterY,rollerCenterY(1)];
+pl2 = plot(armX,armY); hold on
+pl2.XDataSource = 'armX';
+pl2.YDataSource = 'armY';
+
+plot(armCenterX,armCenterY,'o','MarkerFaceColor','r');
+
+% Draw roller
+index = linspace(0,2*pi,100);
+xC = rRoller*cos(index) + rollerCenterX(1);
+yC = rRoller*sin(index) + rollerCenterY(1);
+pl3 = plot(xC,yC,'color',rollerColor); hold on
+pl3.XDataSource = 'xC';
+pl3.YDataSource = 'yC';
+
+% Draw roller center
+tempRollerCenterX = rollerCenterX(1);
+tempRollerCenterY = rollerCenterY(1);
+pl4 = plot(tempRollerCenterX,tempRollerCenterY,'o','MarkerFaceColor',[0 0.4470 0.7410]); hold on
+pl4.XDataSource = 'tempRollerCenterX';
+pl4.YDataSource = 'tempRollerCenterY';
 
 
+% Draw pitch curve
+pitchX = real(pitchCurve); pitchY = imag(pitchCurve);
+xx = pitchX;
+yy = pitchY;
+pl = plot(xx,yy,'color',pitchColor);hold on; 
+pl.XDataSource = 'xx';
+pl.YDataSource = 'yy';
+
+% Draw cam profile
+[camSurfX,camSurfY] = offsetIn(pitchX,pitchY,rRoller);
+xx2 = camSurfX;
+yy2 = camSurfY;
+pl2 = plot(xx2,yy2,'color',camColor); hold on;
+pl2.XDataSource = 'xx2';
+pl2.YDataSource = 'yy2';
+
+plot(0,0,'o','MarkerFaceColor','b');
+axis equal; grid on; grid minor;
+
+
+
+
+%============================================
+% UPDATE FRAME 
+%============================================
+
+for loopNumber = 1:5
+
+for i = 1:length(theta)
+j = thetaRadian(i);
+
+% Update rocker arm
+armX = [armCenterX,rollerCenterX(i)];
+armY = [armCenterY,rollerCenterY(i)];
+
+% Update roller position
+xC = rRoller*cos(index) + rollerCenterX(i);
+yC = rRoller*sin(index) + rollerCenterY(i);
+
+% Update roller center position
+tempRollerCenterX = rollerCenterX(i);
+tempRollerCenterY = rollerCenterY(i);
+
+% Update rotated pitch
+rotatedPitch = rotateCw([pitchX;pitchY],j);
+xx = rotatedPitch(1,:);
+yy = rotatedPitch(2,:);
+
+% Update rotated cam
+rotatedCam = rotateCw([camSurfX;camSurfY],j);
+xx2 = rotatedCam(1,:);
+yy2 = rotatedCam(2,:);
+
+maxDim = rocker2cam+5;
+xlim([-maxDim maxDim]);
+ylim([-maxDim maxDim]);
+
+refreshdata
+pause(0.01)
+end 
+
+end 
+
+%============================================
+% FUNCTIONS 
+%============================================
+
+function [xOffset,yOffset] = offsetIn(x,y,R)
+% Generate 2 vectors holding coordinates of offset curve by R from a closed
+% curve. 
+% If R is positive, the offset curve will be inside the original curve. 
+% If R is negative, the offset curve will be outside the original curve.
+
+L = length(x); % the length of both vectors
+% Check whether the input is closed
+%if (x(1) ~= x(L))
+if (abs(x(1) - x(L)) > 10^-10)
+    disp("The input is not a closed curve. The function will terminate.")
+    return
+end
+
+xOffset = zeros(size(x));
+yOffset = zeros(size(x));
+
+% Boundary. Note that the first and the last points on pitch curve are the
+% same
+[xOffset(1),yOffset(1)] = normalIn([x(L-1) x(1) x(2)],[y(length(y)-1) y(1) y(2)],R); 
+[xOffset(L),yOffset(L)] = normalIn([x(L-1) x(L) x(2)],[y(L-1) y(L) y(2)],R);
+
+for k = 1:1:L-2
+X = x(k:1:k+2);
+Y = y(k:1:k+2);
+[xOffset(k+1),yOffset(k+1)] = normalIn(X,Y,R);
+end
+
+end
+
+function [xo,yo] = normalIn(x,y,R)
+% x and y are row vector of length 3 (longer vectors don't cause problem,
+% but only the first 3 elements will be used. 
+
+% Call the three point represented by x and y A, B and C
+% This function return the coordinates of point D such that
+% * DB is perpendicular to AC
+% * DB has length R
+% * D is on the right hand side when moving on the curve ABC from A to C
+% if R is positive and left hand side if R is negative
+
+% calculate normal vector <a,b>
+a = y(1)-y(3);
+b = x(3)-x(1);
+k = R/sqrt(a^2+b^2); 
+
+% temporary factor
+xo = k*a + x(2);
+yo = k*b + y(2);
+end
+
+function Y = rotateCw(X,theta)
+% rotate clockwise
+rotMat = [cos(theta) sin(theta); -sin(theta) cos(theta)];
+Y = rotMat * X;
+end
 
