@@ -1,6 +1,6 @@
 % CAM Design Assistant
 % Dwell - Rise - Dwell - Return oscillating CAM
-% 2023-01-30
+% 2022-12-07
 
 %%
 clc; close all; 
@@ -148,7 +148,7 @@ disp(tempA)
 
 s2rad = s/l_load; % convert arc length to angular displacement
 s_rad_initial = pi/6; % initial angular displacement in coordinate system
-s2rad = s2rad + s_rad_initial;
+s2rad = s2rad + s_rad_initial; % angular displacement
 thetaRadian = deg2rad(theta);
 
 roller_position1 = l_roller*exp(s2rad*1i);  %unregulated position, rocker is at center
@@ -156,6 +156,45 @@ roller_position = roller_position1 - rocker2cam; % cam is at center, rocker axis
 pitchCurve = roller_position.*exp(thetaRadian*1i); 
 % move points counterclockwise, this means the cam rotates clockwise 
 
+
+%%
+%============================================
+% PRESSURE ANGLE
+%============================================
+rockerNormalAngle = rad2deg(angle(roller_position1))+90;
+
+pressureAngle = zeros(size(theta));
+normalPhase = zeros(size(theta));
+for i = 1:length(theta)
+j = thetaRadian(i);
+
+% Update roller center position
+tempRollerCenter = [rollerCenterX(i) rollerCenterY(i)];
+
+% Update cam-roller contact point
+rotatedCam = rotateCw([camSurfX;camSurfY],j);
+contactPoint = [rotatedCam(1,i) rotatedCam(2,i)];
+
+normalPhase(i) = segmentPhase(contactPoint,tempRollerCenter);
+end
+
+pressureAngle = (normalPhase - rockerNormalAngle);
+
+figure;
+angleColor = 'b';
+plot(theta, pressureAngle,'Color',angleColor);
+ax = gca;
+ax.YColor = angleColor;
+grid on;
+grid minor;
+xlim([0 360]);
+xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+ylabel({'圧角','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+
+tempP = strcat('最大圧角 ',num2str(max(abs(pressureAngle))),'^o');
+%  title(temp,'Color','b','FontSize',15,'FontWeight','light');
+
+title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
 %%
 %============================================
 % ANIMATION 
@@ -210,6 +249,13 @@ pl2.XDataSource = 'xx2';
 pl2.YDataSource = 'yy2';
 
 plot(0,0,'o','MarkerFaceColor','b');
+
+% Draw cam-roller contact point
+contactPointX = camSurfX(1);
+contactPointY = camSurfY(1);
+pl5 = plot(contactPointX, contactPointY,'o','MarkerFaceColor','b'); hold on;
+pl5.XDataSource = 'contactPointX';
+pl5.YDataSource = 'contactPointY';
 axis equal; grid on; grid minor;
 
 
@@ -246,6 +292,11 @@ rotatedCam = rotateCw([camSurfX;camSurfY],j);
 xx2 = rotatedCam(1,:);
 yy2 = rotatedCam(2,:);
 
+% Update cam-roller contact point
+rotatedCam = rotateCw([camSurfX;camSurfY],j);
+contactPointX = rotatedCam(1,i);
+contactPointY = rotatedCam(2,i);
+
 maxDim = rocker2cam+5;
 xlim([-maxDim maxDim]);
 ylim([-maxDim maxDim]);
@@ -255,6 +306,9 @@ pause(0.01)
 end 
 
 end 
+
+
+
 
 %============================================
 % FUNCTIONS 
@@ -268,7 +322,9 @@ function [xOffset,yOffset] = offsetIn(x,y,R)
 
 L = length(x); % the length of both vectors
 % Check whether the input is closed
-%if (x(1) ~= x(L))
+%if (x(1) ~= x(L)) %the same point could be shifted because of calculation
+%precision. Although the difference is extremely small, this condition may
+%not hold true, hence the condition in the next line.
 if (abs(x(1) - x(L)) > 10^-10)
     disp("The input is not a closed curve. The function will terminate.")
     return
@@ -316,4 +372,11 @@ function Y = rotateCw(X,theta)
 rotMat = [cos(theta) sin(theta); -sin(theta) cos(theta)];
 Y = rotMat * X;
 end
+
+function segmentPhase = segmentPhase(P1,P2)
+% return the angle of the vector from point P1 to point P2
+complexNum = P2(1) - P1(1) + (P2(2) - P1(2))*1i;
+segmentPhase = rad2deg(angle(complexNum));
+end
+
 
