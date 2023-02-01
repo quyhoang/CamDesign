@@ -1,26 +1,25 @@
 % CAM Design Assistant
 % Dwell - Rise - Dwell - Return oscillating CAM
-% 2022-12-07
+% 2023-02-01
 
 %%
-clc; close all; 
+clc; close all; clear;
 % clear;
 %============================================
 % INPUT 入力
 %============================================
 % All values in degree
 
-%TEMPORARY - DEBUGGING only
-rPrime = 0;
-
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
 eventAngle = [80 120 190 230]; % degree at which the rise/return starts/ends
-h = 10; % stroke in mm
+h = 5; % stroke in mm
 l_roller = 60; % distance from arm rotating axis to roller center
 l_load = 80; % distance from arm center to load
-
+m_roller = 0.1; % roller mass in kilogram
 rRoller = 8;
+
+m_rocker = 0.4; % rocker arm mass in kilogram
 
 rocker2cam = 80; % distance between rocker arm and cam axes
 RPM = 200; % motor velocity in rounds per minutes
@@ -86,7 +85,9 @@ temp = theta(theta > point(8) & theta <= 360);
 sDwe3 = zeros(size(temp));
 
 % Entire trajectory
-s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
+% s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
+s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3];
+
 
 % Plot position vs angle in cartesian coordinate
 figure;
@@ -96,7 +97,7 @@ grid on;
 grid minor;
 xlim([0 T]);
 xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
-ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
+ylim([-2*abs(h)+h/2 2*abs(h)+h/2]);
 ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
 % legend("位置 s");
 [tit,] = title({'';'S V A Diagram'},{['モーター回転速度 ',num2str(RPM),'rpm   ','T = ', num2str(T),'s'];''},...
@@ -156,6 +157,11 @@ roller_position = roller_position1 - rocker2cam; % cam is at center, rocker axis
 pitchCurve = roller_position.*exp(thetaRadian*1i); 
 % move points counterclockwise, this means the cam rotates clockwise 
 
+rollerCenterX = real(roller_position);
+rollerCenterY = imag(roller_position);
+
+pitchX = real(pitchCurve); pitchY = imag(pitchCurve);
+[camSurfX,camSurfY] = offsetIn(pitchX,pitchY,rRoller);
 
 %%
 %============================================
@@ -178,35 +184,45 @@ contactPoint = [rotatedCam(1,i) rotatedCam(2,i)];
 normalPhase(i) = segmentPhase(contactPoint,tempRollerCenter);
 end
 
-pressureAngle = (normalPhase - rockerNormalAngle);
+pressureAngle = (rockerNormalAngle - normalPhase);
 
 figure;
 angleColor = 'b';
 plot(theta, pressureAngle,'Color',angleColor);
-ax = gca;
-ax.YColor = angleColor;
+xlim([0 360]);
 grid on;
 grid minor;
-xlim([0 360]);
+
 xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
 ylabel({'圧角','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
 
 tempP = strcat('最大圧角 ',num2str(max(abs(pressureAngle))),'^o');
-%  title(temp,'Color','b','FontSize',15,'FontWeight','light');
-
 title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
+
+%%
+%============================================
+% MOTOR TORQUE 
+%============================================
+
+angularAcceleration = aa/(l_roller/1000);
+inertialMoment1 = m_roller*(l_roller/1000)^2;
+inertialMoment2 = 1/3*m_rocker*(l_load/1000)^2;
+inertialMoment = inertialMoment1 + inertialMoment2;
+minimumSpringTorque = inertialMoment*angularAcceleration;
+
+
 %%
 %============================================
 % ANIMATION 
 %============================================
 
-figure
 
+figure;
 % Draw rocker arm
 armCenterX = -rocker2cam;
 armCenterY = 0;
-rollerCenterX = real(roller_position);
-rollerCenterY = imag(roller_position);
+% rollerCenterX = real(roller_position);
+% rollerCenterY = imag(roller_position);
 
 armX = [armCenterX,rollerCenterX(1)];
 armY = [armCenterY,rollerCenterY(1)];
@@ -233,7 +249,7 @@ pl4.YDataSource = 'tempRollerCenterY';
 
 
 % Draw pitch curve
-pitchX = real(pitchCurve); pitchY = imag(pitchCurve);
+% pitchX = real(pitchCurve); pitchY = imag(pitchCurve);
 xx = pitchX;
 yy = pitchY;
 pl = plot(xx,yy,'color',pitchColor);hold on; 
@@ -241,7 +257,7 @@ pl.XDataSource = 'xx';
 pl.YDataSource = 'yy';
 
 % Draw cam profile
-[camSurfX,camSurfY] = offsetIn(pitchX,pitchY,rRoller);
+% [camSurfX,camSurfY] = offsetIn(pitchX,pitchY,rRoller);
 xx2 = camSurfX;
 yy2 = camSurfY;
 pl2 = plot(xx2,yy2,'color',camColor); hold on;
@@ -253,19 +269,27 @@ plot(0,0,'o','MarkerFaceColor','b');
 % Draw cam-roller contact point
 contactPointX = camSurfX(1);
 contactPointY = camSurfY(1);
-pl5 = plot(contactPointX, contactPointY,'o','MarkerFaceColor','b'); hold on;
+pl5 = plot(contactPointX, contactPointY,'.','color','r'); hold on;
 pl5.XDataSource = 'contactPointX';
 pl5.YDataSource = 'contactPointY';
 axis equal; grid on; grid minor;
 
 
-
+maxDim = rocker2cam+5;
+xlim([-maxDim maxDim]);
+ylim([-maxDim maxDim]);
 
 %============================================
 % UPDATE FRAME 
 %============================================
 
-for loopNumber = 1:5
+% Cam motion simulation
+prompt = "Show cam motion? カムの動きのシミュレーションを表示しますか? y/n [n]: ";
+txt = input(prompt,"s");
+
+if (txt == 'y')
+
+for loopNumber = 1:1
 
 for i = 1:length(theta)
 j = thetaRadian(i);
@@ -297,9 +321,7 @@ rotatedCam = rotateCw([camSurfX;camSurfY],j);
 contactPointX = rotatedCam(1,i);
 contactPointY = rotatedCam(2,i);
 
-maxDim = rocker2cam+5;
-xlim([-maxDim maxDim]);
-ylim([-maxDim maxDim]);
+
 
 refreshdata
 pause(0.01)
@@ -307,7 +329,7 @@ end
 
 end 
 
-
+end
 
 
 %============================================
@@ -378,5 +400,4 @@ function segmentPhase = segmentPhase(P1,P2)
 complexNum = P2(1) - P1(1) + (P2(2) - P1(2))*1i;
 segmentPhase = rad2deg(angle(complexNum));
 end
-
 
