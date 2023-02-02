@@ -1,12 +1,10 @@
-
 % CAM Design Assistant
-% Dwell - Rise - Dwell - Return CAM
+% Dwell - Rise - Dwell - Return translating CAM
 % 2022-12-07
 
 %%
-clc; close all; clear;
-set(0,'DefaultFigureWindowStyle','docked')
-% set(0,'DefaultFigureWindowStyle','normal')
+clc; close all; 
+% clear;
 %============================================
 % INPUT 入力
 %============================================
@@ -14,10 +12,10 @@ set(0,'DefaultFigureWindowStyle','docked')
 
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [50 100 190 230]; % degree at which the rise/return starts/ends
-h = 15; % stroke in mm
+eventAngle = [80 180 190 230]; % degree at which the rise/return starts/ends
+h = 10; % stroke in mm
 RPM = 200; % motor velocity in rounds per minutes
-m = 2; % follower mass in kg
+m = 1; % follower mass in kg
 
 % recommended values
 maxPressureAngle_deg = 20; % in degree
@@ -252,7 +250,7 @@ grid on;
 [title1,] = title({'';'位置　vs　角度';''},'Color','b','FontSize',15,'FontWeight','light');
 
 % Converting Polar to Cartesian Coordinate System
-[x,y] = pol2cart(theta2,s);
+[pitchX,pitchY] = pol2cart(theta2,s);
 
 input(['何かキーを押すとカムの輪郭を表示します。','\n'])
 % Wait for user response to proceed
@@ -265,13 +263,13 @@ input(['何かキーを押すとカムの輪郭を表示します。','\n'])
 % Draw roller around cam curve and on pitch curve, sample rate is defined in input region
 figure('Name','カムの輪郭加工');
 sampleRate = round(sampleRate*length(theta2)/360);
-x_sample = transpose(x(1:sampleRate:length(x)));
-y_sample = transpose(y(1:sampleRate:length(y)));
+x_sample = transpose(pitchX(1:sampleRate:length(pitchX)));
+y_sample = transpose(pitchY(1:sampleRate:length(pitchY)));
 
 centers = [x_sample y_sample];
 radii = rRoller*ones(length(y_sample),1);
 
-plot(x,y,'Color',pitchColor);
+plot(pitchX,pitchY,'Color',pitchColor);
 hold on;
 rollerColor = [0.4660 0.6740 0.1880];
 p = viscircles([x_sample(1),y_sample(1)],rRoller,'LineWidth',1,'Color',rollerColor);
@@ -292,10 +290,10 @@ end
 % figure; % figure('Name','カムの輪郭');
 viscircles(centers,radii,'LineWidth',1,'color',rollerColor);
 axis equal; hold on; grid on; grid minor;
-plot(x,y,'color','r');
+plot(pitchX,pitchY,'color','r');
 
 % Plot cam profile
-[camSurfX, camSurfY] = offsetIn(x,y,rRoller);
+[camSurfX, camSurfY] = offsetIn(pitchX,pitchY,rRoller);
 plot(camSurfX,camSurfY,'color','b')
 
 % Export data for using in 3D CAD package
@@ -383,13 +381,19 @@ title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
 grid on; grid minor;
 disp(torqueTitle);
 
+fileName = input("トルクを保存します。ファイル名を入力してください。","s");
+newTorqueName = input('トルク変数の名を入力してください: ', 's');
+eval([newTorqueName, '=torque;']); % we cannot directly assign value to the new variable name
+% this is dynamic field referencing syntax to assign the value of the original variable to the new variable name.
+save(fileName, newTorqueName);
+
 %%
 % ====================================
 % ANIMATING CAM ROTATION
 % ====================================
 
 angleLineFactor = 4;
-[angleEndPointX,angleEndPointY] = offsetIn(x,y,-angleLineFactor*rRoller);
+[angleEndPointX,angleEndPointY] = offsetIn(pitchX,pitchY,-angleLineFactor*rRoller);
 
 
 % Cam motion simulation
@@ -406,7 +410,7 @@ if (txt == 'y')
     hold on
     plot(0,0,'o','MarkerFaceColor','r');
     % Pitch Circle
-    rotatedPitch = rotateCw([x;y],-pi/2);
+    rotatedPitch = rotateCw([pitchX;pitchY],-pi/2);
     pl = plot(rotatedPitch(1,:),rotatedPitch(2,:),'color',pitchColor);
     axis equal;
     maxDim = rBase + abs(h) + 2*rRoller + 10;
@@ -467,7 +471,7 @@ if (txt == 'y')
     for i = 1:length(theta2)
     j = theta2(i)-pi/2;
     
-    rotatedPitch = rotateCw([x;y],j);
+    rotatedPitch = rotateCw([pitchX;pitchY],j);
     xx = rotatedPitch(1,:);
     yy = rotatedPitch(2,:);
     
