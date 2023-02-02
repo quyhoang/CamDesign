@@ -12,18 +12,19 @@ clc; close all; clear;
 
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [80 120 190 230]; % degree at which the rise/return starts/ends
-h = 5; % stroke in mm
-l_roller = 60; % distance from arm rotating axis to roller center
+eventAngle = [0 30 190 220]; % degree at which the rise/return starts/ends
+h = 3; % stroke in mm
+l_roller = 75; % distance from arm rotating axis to roller center
+estLoad = 5; % estimated load in Newton
 l_load = 80; % distance from arm center to load
 m_roller = 0.1; % roller mass in kilogram
-rRoller = 8;
+rRoller = 10;
 
 m_rocker = 0.4; % rocker arm mass in kilogram
 
 rocker2cam = 80; % distance between rocker arm and cam axes
 RPM = 200; % motor velocity in rounds per minutes
-m = 1; % follower mass in kg
+% m = 1; % follower mass in kg
 
 % recommended values
 maxPressureAngle_deg = 20; % in degree
@@ -171,6 +172,11 @@ rockerNormalAngle = rad2deg(angle(roller_position1))+90;
 
 pressureAngle = zeros(size(theta));
 normalPhase = zeros(size(theta));
+contactPointonCamPhase = zeros(size(theta));
+contactPoint2CamDistance = zeros(size(theta));
+
+camCenter = [0 0];
+
 for i = 1:length(theta)
 j = thetaRadian(i);
 
@@ -182,6 +188,8 @@ rotatedCam = rotateCw([camSurfX;camSurfY],j);
 contactPoint = [rotatedCam(1,i) rotatedCam(2,i)];
 
 normalPhase(i) = segmentPhase(contactPoint,tempRollerCenter);
+contactPointonCamPhase(i) = segmentPhase(camCenter,contactPoint);
+contactPoint2CamDistance(i) = norm(contactPoint); %distance from cam center to contact point
 end
 
 pressureAngle = (rockerNormalAngle - normalPhase);
@@ -208,8 +216,34 @@ angularAcceleration = aa/(l_roller/1000);
 inertialMoment1 = m_roller*(l_roller/1000)^2;
 inertialMoment2 = 1/3*m_rocker*(l_load/1000)^2;
 inertialMoment = inertialMoment1 + inertialMoment2;
-minimumSpringTorque = inertialMoment*angularAcceleration;
+combinedTorque = inertialMoment*angularAcceleration;
+regulatedMinimumSpringTorque = min(combinedTorque)*ones(size(combinedTorque));
 
+estimatedLoadTorque = -l_load/1000*estLoad;
+
+motorInducedTorque = combinedTorque - regulatedMinimumSpringTorque - estimatedLoadTorque;
+
+% Calculate motor force
+rockerAngle = rad2deg(angle(roller_position1));
+rocker2forceAngle = deg2rad(normalPhase - rockerAngle);
+forceModuli = 1/l_roller*motorInducedTorque./sin(rocker2forceAngle);
+camForceArm2ForceAngle = deg2rad(contactPointonCamPhase-normalPhase);
+motorTorque = contactPoint2CamDistance.*forceModuli.*sin(camForceArm2ForceAngle);
+figure; 
+
+plot(theta,motorTorque);
+xlim([0 360]);
+xlabel('角度') ; % misumi nomenclature
+ylabel('トルク (Nm)') ;
+torqueTitle = strcat('最大トルク  ', num2str(max(motorTorque)),' Nm');
+title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
+grid on; grid minor;
+
+fileName = input("トルクを保存します。ファイル名を入力してください。","s");
+newTorqueName = input('トルク変数の名を入力してください: ', 's');
+eval([newTorqueName, '=motorTorque;']); % we cannot directly assign value to the new variable name
+% this is dynamic field referencing syntax to assign the value of the original variable to the new variable name.
+save(fileName, newTorqueName);
 
 %%
 %============================================
@@ -274,6 +308,9 @@ pl5.XDataSource = 'contactPointX';
 pl5.YDataSource = 'contactPointY';
 axis equal; grid on; grid minor;
 
+initialContactPoint = [contactPointX contactPointY];
+writematrix(initialContactPoint,'initialContactPoint.txt','Delimiter','tab');
+
 
 maxDim = rocker2cam+5;
 xlim([-maxDim maxDim]);
@@ -331,6 +368,25 @@ end
 
 end
 
+% Export data for using in 3D CAD package
+prompt1 = (['CreoAutomation.exe がアクティブで、' ...
+    '\ntxt データが Creo 作業ディレクトリに保存されている場合、' ...
+    '\n「gcam」を押して Enter を押すと、' ...
+    '\nカムの 3D モデルが作成されます。']);
+prompt = prompt1 + "\n\nExport data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
+txt = input(prompt,"s");
+
+% Animate machining process if user input 'y'
+% otherwise (input 'n' or just Enter), skip
+if (txt == 'y')
+    x_cord = transpose(camSurfX);
+    y_cord = transpose(camSurfY);
+    z_cord = zeros(size(x_cord));
+    
+    camProfile = [x_cord y_cord z_cord];
+%     writematrix(camProfile,'camProfile.xlsx');
+    writematrix(camProfile,'camProfile.txt','Delimiter','tab');
+end
 
 %============================================
 % FUNCTIONS 
