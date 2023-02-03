@@ -12,13 +12,13 @@ clc; close all;
 
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [80 180 190 230]; % degree at which the rise/return starts/ends
-h = 10; % stroke in mm
+eventAngle = [0 30 190 220]; % degree at which the rise/return starts/ends
+h = 3; % stroke in mm
 RPM = 200; % motor velocity in rounds per minutes
 m = 1; % follower mass in kg
 
 % recommended values
-maxPressureAngle_deg = 20; % in degree
+maxPressureAngle_deg = 30; % in degree
 kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
 step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
@@ -123,12 +123,12 @@ temp = theta(theta > point(8) & theta <= 360);
 sDwe3 = zeros(size(temp));
 
 % Entire trajectory
-s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
+displacement = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
 
 % Plot position vs angle in cartesian coordinate
 figure;
 subplot(3,1,1);
-plot(time,s);
+plot(time,displacement);
 grid on;
 grid minor;
 xlim([0 T]);
@@ -144,27 +144,27 @@ tit.FontSize = 15;
 % VELOCITY
 %============================================
 % velocity with respect to time
-vv = diff(s)/timeStep;
-vv = [vv s(1)-s(length(s))]; %add the last element to make the length of vv and theta equal
+velocity = diff(displacement)/timeStep;
+velocity = [velocity displacement(1)-displacement(length(displacement))]; %add the last element to make the length of vv and theta equal
 subplot(3,1,2);
-plot(time,vv);
+plot(time,velocity);
 grid on;
 grid minor;
 xlim([0 T]);
 xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'速度','mm/s'},'FontSize',15,'FontWeight','light','Color','b');
 %title({'';'速度　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-tempV = strcat('最大速度 ',num2str(max(vv)),' mm/s');
+tempV = strcat('最大速度 ',num2str(max(velocity)),' mm/s');
 title(tempV ,'Color','b','FontSize',15,'FontWeight','light');
 
 %============================================
 % ACCELERATION
 %============================================
 % acceleration with respect to time
-aa = diff(vv)/timeStep;
-aa = [aa vv(1)-vv(length(vv))]/1000;
+acceleration = diff(velocity)/timeStep;
+acceleration = [acceleration velocity(1)-velocity(length(velocity))]/1000;
 subplot(3,1,3);
-plot(time,aa);
+plot(time,acceleration);
 grid on; grid minor;
 
 xlim([0 T]);
@@ -172,7 +172,7 @@ xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'加速','m/s^2'},'FontSize',15,'FontWeight','light','Color','b');
 
 %title({'';'加速　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-tempA = strcat('最大加速  ', num2str(max(aa)),' m/s^2');
+tempA = strcat('最大加速  ', num2str(max(acceleration)),' m/s^2');
 title(tempA,'Color','b','FontSize',15,'FontWeight','light');
 
 disp(tempV)
@@ -187,10 +187,10 @@ input(['\n','何かキーを押すと圧角を表示します。\n'])
 % tan a = {ds/d(theta)}/(s + rb + rr) %theta in degree
 
 radianStep = deg2rad(step);
-d_s = [diff(s) s(1)-s(length(s))];
+d_s = [diff(displacement) displacement(1)-displacement(length(displacement))];
 v_theta = d_s/radianStep; % differentiate s with respect to theta in radian
 
-pitch_radius = s + rRoller;
+pitch_radius = displacement + rRoller;
 tanPressureAngle = v_theta./pitch_radius;
 
 pressureAngle = rad2deg(atan(tanPressureAngle));
@@ -210,7 +210,7 @@ ylabel({'圧角','degree'},'FontSize',15,'FontWeight','light','Color',angleColor
 
 yyaxis right
 strokeColor = [0.6350 0.0780 0.1840];
-plot(theta,s,'Color',strokeColor);
+plot(theta,displacement,'Color',strokeColor);
 ax = gca;
 ax.YColor = strokeColor;
 grid on;
@@ -227,13 +227,9 @@ tempP = strcat('最大圧角 ',num2str(max(pressureAngle)),'^o');
 title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
 
 disp(strcat('最大圧角: ',num2str(max(pressureAngle)),'度'));
+
 input(['\n','何かキーを押すとカムのピッチ円を表示します。','\n'])
 % Wait for user respond to proceed
-%============================================
-% RADIUS OF CURVATURE 曲率半径
-%============================================
-% p = {[(rb + s)^2 + (ds/dtheta)^2]^(3/2)}/[(rb + s)^2 + 2*(ds/dtheta)^2 - (rb+s)*d^2s/dtheta^2]
-
 %%
 %============================================
 % POSITION IN POLAR COORDINATES
@@ -245,12 +241,12 @@ camColor = 'b'; % cam profile color
 % figure('Name','極座標のカム ピッチ カーブ');
 figure;
 theta2 = deg2rad(theta);
-polarplot(theta2,s,'Color',pitchColor);
+polarplot(theta2,displacement,'Color',pitchColor);
 grid on;
 [title1,] = title({'';'位置　vs　角度';''},'Color','b','FontSize',15,'FontWeight','light');
 
 % Converting Polar to Cartesian Coordinate System
-[pitchX,pitchY] = pol2cart(theta2,s);
+[pitchX,pitchY] = pol2cart(theta2,displacement);
 
 input(['何かキーを押すとカムの輪郭を表示します。','\n'])
 % Wait for user response to proceed
@@ -317,7 +313,64 @@ if (txt == 'y')
 end
 
 
+
+input(['\n','何かキーを押すと曲率半径を表示します。','\n'])
+% Wait for user respond to proceed
+%%
+%============================================
+% RADIUS OF CURVATURE
+%============================================
+
+curvature = zeros(size(camSurfX));
+L = length(camSurfX);
+% Boundary. Note that the first and the last points on profile curve are the
+% same
+curvature(1) = circumscribedR([camSurfX(L-1) camSurfX(1) camSurfX(2)],[camSurfY(L-1) camSurfY(1) camSurfY(2)]); 
+curvature(L) = circumscribedR([camSurfX(L-1) camSurfX(L) camSurfX(2)],[camSurfY(L-1) camSurfY(L) camSurfY(2)]); 
+
+for k = 1:1:L-2
+X = camSurfX(k:1:k+2);
+Y = camSurfY(k:1:k+2);
+curvature(k+1) = circumscribedR(X,Y);
+end
+
+figure;
+yyaxis left
+angleColor = 'b';
+semilogy(theta, curvature,'Color',angleColor);
+ax = gca;
+ax.YColor = angleColor;
+grid on;
+grid minor;
+xlim([0 360]);
+xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+ylabel({'曲率半径','mm'},'FontSize',15,'FontWeight','light','Color',angleColor);
+
+yyaxis right
+strokeColor = [0.6350 0.0780 0.1840];
+plot(theta,displacement,'Color',strokeColor);
+ax = gca;
+ax.YColor = strokeColor;
+grid on;
+grid minor;
+xlim([0 360]);
+% ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
+% xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
+ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
+hold on
+
+tempP = strcat('最小曲率半径 ',num2str(min(curvature)),'mm');
+%  title(temp,'Color','b','FontSize',15,'FontWeight','light');
+
+title({'';'曲率半径・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
+
+disp(strcat('最小曲率半径: ',num2str(min(curvature)),'mm'));
+% p = {[(rb + s)^2 + (ds/dtheta)^2]^(3/2)}/[(rb + s)^2 + 2*(ds/dtheta)^2 - (rb+s)*d^2s/dtheta^2]
+
+
 input(['何かキーを押すとモータートルクを表示します。','\n'])
+
+
 % Wait for user response to proceed
 %% 
 %============================================
@@ -328,18 +381,18 @@ input(['何かキーを押すとモータートルクを表示します。','\n'
 % kFriction = 1;
 fFriction = kFriction * m * 9.8; 
 % Friction force is in opposite direction of velocity
-temp1 = -(vv>0);
-temp2 = (vv<0);
+temp1 = -(velocity>0);
+temp2 = (velocity<0);
 fFrictionDirection = temp1 + temp2;
 fFriction = fFriction.*fFrictionDirection;
 
 deltaXoInput = input("最初ばね変位 (mm): ");
 deltaXo = deltaXoInput/1000; % convert to m
 % deltaXo = 0.001; %m
-strokeT = (s-rPrime)/1000; % m
+strokeT = (displacement-rPrime)/1000; % m
 deltaX = strokeT + deltaXo; % spring displacement 
 
-minFspring = m*aa - fFriction; % positive direction is upward, measured in N
+minFspring = m*acceleration - fFriction; % positive direction is upward, measured in N
 minKspring = -minFspring./deltaX;
 minAcceptableKspring = max(minKspring); 
 
@@ -369,23 +422,35 @@ fSpring = -selectedKspring.*deltaX;
 % plot(fSpring); % N
 
 
-parallelForce = m*aa - fSpring - fFriction; % in N
+parallelForce = m*acceleration - fSpring - fFriction; % in N
 perpendicularForce = parallelForce.*tanPressureAngle;
-torque = s/1000.*perpendicularForce;
+motorTorque = displacement/1000.*perpendicularForce;
 figure;
-plot(theta,torque);
+plot(theta,motorTorque);
 xlabel('角度') ; % misumi nomenclature
 ylabel('トルク (Nm)') ;
-torqueTitle = strcat('最大トルク  ', num2str(max(torque)),' Nm');
+torqueTitle = strcat('最大トルク  ', num2str(max(motorTorque)),' Nm');
 title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
 grid on; grid minor;
 disp(torqueTitle);
 
-fileName = input("トルクを保存します。ファイル名を入力してください。","s");
-newTorqueName = input('トルク変数の名を入力してください: ', 's');
-eval([newTorqueName, '=torque;']); % we cannot directly assign value to the new variable name
-% this is dynamic field referencing syntax to assign the value of the original variable to the new variable name.
-save(fileName, newTorqueName);
+% save torque for later use. (e.g. Combine with other torques to determine total
+% motor torque.)
+inputMessage =  (['トルクを保存します。ファイル名とトルク名を入力してください。', ...
+    '\nファイル名とトルク名は同じになります。']);
+fileName = input(inputMessage,"s");
+
+if isempty(fileName)
+   disp('ファイル名の入力がないので、トルクを保存しません。');
+else
+   torqueName = fileName;   
+   eval([torqueName, '=motorTorque;']); % we cannot directly assign value to the new variable name
+   % this is dynamic field referencing syntax to assign the value of the original variable to the new variable name.
+   save(fileName, torqueName); %save the variable into the .mat file of the same name.
+   disp('トルクを保存しました。');
+   disp('トルク価値を使う前に、次の構文使ってください：');
+   disp(['load ',fileName]);
+end
 
 %%
 % ====================================
@@ -440,11 +505,11 @@ if (txt == 'y')
     
     index = linspace(0,2*pi,100);
     xC = rRoller*cos(index);
-    yC = rRoller*sin(index) + s(1);
+    yC = rRoller*sin(index) + displacement(1);
     pl3 = plot(xC,yC,'color',rollerColor);
     pl3.YDataSource = 'yC';
     
-    rollerCenterY = s(1);
+    rollerCenterY = displacement(1);
     pl4 = plot(0,rollerCenterY,'o','MarkerFaceColor',[0 0.4470 0.7410]); % Roller center
     pl4.YDataSource = 'rollerCenterY';
     
@@ -454,7 +519,7 @@ if (txt == 'y')
     hold on;
     
     % Pressure angle
-    rollerCenterY_angle = s(1)+angleLineFactor*rRoller;
+    rollerCenterY_angle = displacement(1)+angleLineFactor*rRoller;
     angle1y = [rollerCenterY rollerCenterY_angle];
     pl5 = plot([0 0],angle1y,'MarkerFaceColor',[0 0.4470 0.7410]); 
     pl5.YDataSource = 'angle1y';
@@ -479,9 +544,9 @@ if (txt == 'y')
     xx2 = rotatedCam(1,:);
     yy2 = rotatedCam(2,:);
     
-    yC = rRoller*sin(index) + s(i);
-    rollerCenterY = s(i);
-    rollerCenterY_angle = s(i)+angleLineFactor*rRoller;
+    yC = rRoller*sin(index) + displacement(i);
+    rollerCenterY = displacement(i);
+    rollerCenterY_angle = displacement(i)+angleLineFactor*rRoller;
     angle1y = [rollerCenterY rollerCenterY_angle];
     
     rotatedAngleEnd = rotateCw([angleEndPointX(i);angleEndPointY(i)],j);
@@ -489,12 +554,12 @@ if (txt == 'y')
     angle2y = [rollerCenterY rotatedAngleEnd(2)];
     
     temp5 = strcat('圧角　',num2str(pressureAngle(i)),'^o     ');
-    temp2 = strcat('変位　',num2str(s(i)-rPrime),' mm     ');
+    temp2 = strcat('変位　',num2str(displacement(i)-rPrime),' mm     ');
     temp3 = strcat('回転角度　',num2str(theta(i)),'^o   ');
     updatedTitle = {temp3; temp2; temp5};
     [titleAni,] = title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
     
-    temp4 = strcat('位置　',num2str(s(i)),' mm     ');
+    temp4 = strcat('位置　',num2str(displacement(i)),' mm     ');
     ylabel(temp4,'Color',angleColor,'FontSize',15);
     temp1 = strcat('経過時間　',num2str(time(i)),' s     ');
     xlabel(temp1,'Color',angleColor,'FontSize',15);
@@ -505,7 +570,30 @@ if (txt == 'y')
     
     end
 end
-%%
+
+%% 
+%============================================
+% Save all data 
+%============================================
+%% 
+%============================================
+% Save all data 
+%============================================
+camName = input("カムの名を入力してください。","s");
+if ~isempty(camName)
+    save(camName)
+    disp(['データは全て', camName,'.mat に保存されています。']);
+    disp('このデータを使う際に、次の構文使ってください：');
+   disp([camName, ' = load(''''', camName, '.mat'''');']);
+   disp('それから、例えば変位データを使う際に、次の構文使ってください：');
+   disp([camName, '.displacement']);
+else
+    disp('入力がないので、データは保存されていません。');
+end
+%% 
+%============================================
+% FUNCTIONS 
+%============================================
 
 
 function Y = rotateCw(X,theta)
@@ -587,4 +675,20 @@ end
 
 function regulated = regulate(x,ref)
     regulated = x(1:length(ref));
+end
+
+function R = circumscribedR(X,Y)
+% Calculate radius of circumscribed circle through three point in vectors X
+% and Y of size 1*3
+
+A = [X(1) Y(1)]; B = [X(2) Y(2)]; C = [X(3) Y(3)];
+
+a = norm(B-C);
+b = norm(C-A);
+c = norm(A-B);
+
+s = (a+b+c)/2;
+temp = sqrt(s*(s-a)*(s-b)*(s-c));
+
+R = a*b*c/4/temp;
 end
