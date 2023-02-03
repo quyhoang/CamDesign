@@ -4,6 +4,8 @@
 
 %%
 clc; close all; clear;
+
+
 % clear;
 %============================================
 % INPUT 入力
@@ -87,13 +89,13 @@ sDwe3 = zeros(size(temp));
 
 % Entire trajectory
 % s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3] + rPrime;
-s = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3];
+displacement = [sDwe1 sRise1 sRise2 sRise3 sDwe2 sReturn1 sReturn2 sReturn3 sDwe3];
 
 
 % Plot position vs angle in cartesian coordinate
 figure;
 subplot(3,1,1);
-plot(time,s);
+plot(time,displacement);
 grid on;
 grid minor;
 xlim([0 T]);
@@ -109,27 +111,27 @@ tit.FontSize = 15;
 % VELOCITY
 %============================================
 % velocity with respect to time
-vv = diff(s)/timeStep;
-vv = [vv s(1)-s(length(s))]; %add the last element to make the length of vv and theta equal
+velocity = diff(displacement)/timeStep;
+velocity = [velocity displacement(1)-displacement(length(displacement))]; %add the last element to make the length of vv and theta equal
 subplot(3,1,2);
-plot(time,vv);
+plot(time,velocity);
 grid on;
 grid minor;
 xlim([0 T]);
 xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'速度','mm/s'},'FontSize',15,'FontWeight','light','Color','b');
 %title({'';'速度　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-tempV = strcat('最大速度 ',num2str(max(vv)),' mm/s');
+tempV = strcat('最大速度 ',num2str(max(velocity)),' mm/s');
 title(tempV ,'Color','b','FontSize',15,'FontWeight','light');
 
 %============================================
 % ACCELERATION
 %============================================
 % acceleration with respect to time
-aa = diff(vv)/timeStep;
-aa = [aa vv(1)-vv(length(vv))]/1000;
+acceleration = diff(velocity)/timeStep;
+acceleration = [acceleration velocity(1)-velocity(length(velocity))]/1000;
 subplot(3,1,3);
-plot(time,aa);
+plot(time,acceleration);
 grid on; grid minor;
 
 xlim([0 T]);
@@ -137,7 +139,7 @@ xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'加速','m/s^2'},'FontSize',15,'FontWeight','light','Color','b');
 
 %title({'';'加速　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
-tempA = strcat('最大加速  ', num2str(max(aa)),' m/s^2');
+tempA = strcat('最大加速  ', num2str(max(acceleration)),' m/s^2');
 title(tempA,'Color','b','FontSize',15,'FontWeight','light');
 
 disp(tempV)
@@ -148,7 +150,7 @@ disp(tempA)
 % ANGULAR DISPLACEMENT
 %============================================
 
-s2rad = s/l_load; % convert arc length to angular displacement
+s2rad = displacement/l_load; % convert arc length to angular displacement
 s_rad_initial = pi/6; % initial angular displacement in coordinate system
 s2rad = s2rad + s_rad_initial; % angular displacement
 thetaRadian = deg2rad(theta);
@@ -163,6 +165,58 @@ rollerCenterY = imag(roller_position);
 
 pitchX = real(pitchCurve); pitchY = imag(pitchCurve);
 [camSurfX,camSurfY] = offsetIn(pitchX,pitchY,rRoller);
+
+%%
+%============================================
+% RADIUS OF CURVATURE
+%============================================
+
+curvature = zeros(size(camSurfX));
+L = length(camSurfX);
+% Boundary. Note that the first and the last points on profile curve are the
+% same
+curvature(1) = circumscribedR([camSurfX(L-1) camSurfX(1) camSurfX(2)],[camSurfY(L-1) camSurfY(1) camSurfY(2)]); 
+curvature(L) = circumscribedR([camSurfX(L-1) camSurfX(L) camSurfX(2)],[camSurfY(L-1) camSurfY(L) camSurfY(2)]); 
+
+for k = 1:1:L-2
+X = camSurfX(k:1:k+2);
+Y = camSurfY(k:1:k+2);
+curvature(k+1) = circumscribedR(X,Y);
+end
+
+figure;
+yyaxis left
+angleColor = 'b';
+semilogy(theta, curvature,'Color',angleColor);
+ax = gca;
+ax.YColor = angleColor;
+grid on;
+grid minor;
+xlim([0 360]);
+xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+ylabel({'曲率半径','mm'},'FontSize',15,'FontWeight','light','Color',angleColor);
+
+yyaxis right
+strokeColor = [0.6350 0.0780 0.1840];
+plot(theta,displacement,'Color',strokeColor);
+ax = gca;
+ax.YColor = strokeColor;
+grid on;
+grid minor;
+xlim([0 360]);
+% ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
+% xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
+ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
+hold on
+
+tempP = strcat('最小曲率半径 ',num2str(min(curvature)),'mm');
+%  title(temp,'Color','b','FontSize',15,'FontWeight','light');
+
+title({'';'曲率半径・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
+
+disp(strcat('最小曲率半径: ',num2str(min(curvature)),'mm'));
+% input(['\n','何かキーを押すとカムのピッチ円を表示します。','\n'])
+
 
 %%
 %============================================
@@ -212,7 +266,7 @@ title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSiz
 % MOTOR TORQUE 
 %============================================
 
-angularAcceleration = aa/(l_roller/1000);
+angularAcceleration = acceleration/(l_roller/1000);
 inertialMoment1 = m_roller*(l_roller/1000)^2;
 inertialMoment2 = 1/3*m_rocker*(l_load/1000)^2;
 inertialMoment = inertialMoment1 + inertialMoment2;
@@ -239,11 +293,26 @@ torqueTitle = strcat('最大トルク  ', num2str(max(motorTorque)),' Nm');
 title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
 grid on; grid minor;
 
-fileName = input("トルクを保存します。ファイル名を入力してください。","s");
-newTorqueName = input('トルク変数の名を入力してください: ', 's');
-eval([newTorqueName, '=motorTorque;']); % we cannot directly assign value to the new variable name
-% this is dynamic field referencing syntax to assign the value of the original variable to the new variable name.
-save(fileName, newTorqueName);
+% save torque for later use. (e.g. Combine with other torques to determine total
+% motor torque.)
+inputMessage =  (['トルクを保存します。ファイル名とトルク名を入力してください。', ...
+    '\nファイル名とトルク名は同じになります。']);
+fileName = input(inputMessage,"s");
+
+if isempty(fileName)
+   disp('ファイル名の入力がないので、トルクを保存しません。');
+else
+   torqueName = fileName;   
+   eval([torqueName, '=motorTorque;']); % we cannot directly assign value to the new variable name
+   % this is dynamic field referencing syntax to assign the value of the original variable to the new variable name.
+   save(fileName, torqueName); %save the variable into the .mat file of the same name.
+   disp('トルクを保存しました。');
+   disp('トルク価値を使う前に、次の構文使ってください：');
+   disp(['load ',fileName]);
+end
+
+
+
 
 %%
 %============================================
@@ -354,7 +423,7 @@ xx2 = rotatedCam(1,:);
 yy2 = rotatedCam(2,:);
 
 % Update cam-roller contact point
-rotatedCam = rotateCw([camSurfX;camSurfY],j);
+% rotatedCam = rotateCw([camSurfX;camSurfY],j);
 contactPointX = rotatedCam(1,i);
 contactPointY = rotatedCam(2,i);
 
@@ -376,7 +445,7 @@ prompt1 = (['CreoAutomation.exe がアクティブで、' ...
 prompt = prompt1 + "\n\nExport data (.txt)? データ (.txt) をエクスポートしますか? y/n [n] : ";
 txt = input(prompt,"s");
 
-% Animate machining process if user input 'y'
+% Export if user inputs 'y'
 % otherwise (input 'n' or just Enter), skip
 if (txt == 'y')
     x_cord = transpose(camSurfX);
@@ -388,6 +457,24 @@ if (txt == 'y')
     writematrix(camProfile,'camProfile.txt','Delimiter','tab');
 end
 
+
+%% 
+%============================================
+% Save all data 
+%============================================
+camName = input("カムの名を入力してください。","s");
+if ~isempty(camName)
+    save(camName)
+    disp(['データは全て', camName,'.mat に保存されています。']);
+    disp('このデータを使う際に、次の構文使ってください：');
+   disp([camName, ' = load(''''', camName, '.mat'''');']);
+   disp('それから、例えば変位データを使う際に、次の構文使ってください：');
+   disp([camName, '.displacement']);
+else
+    disp('入力がないので、データは保存されていません。');
+end
+
+%% 
 %============================================
 % FUNCTIONS 
 %============================================
@@ -457,3 +544,18 @@ complexNum = P2(1) - P1(1) + (P2(2) - P1(2))*1i;
 segmentPhase = rad2deg(angle(complexNum));
 end
 
+function R = circumscribedR(X,Y)
+% Calculate radius of circumscribed circle through three point in vectors X
+% and Y of size 1*3
+
+A = [X(1) Y(1)]; B = [X(2) Y(2)]; C = [X(3) Y(3)];
+
+a = norm(B-C);
+b = norm(C-A);
+c = norm(A-B);
+
+s = (a+b+c)/2;
+temp = sqrt(s*(s-a)*(s-b)*(s-c));
+
+R = a*b*c/4/temp;
+end
