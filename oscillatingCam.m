@@ -25,10 +25,9 @@ rRoller = 10;
 m_rocker = 0.4; % rocker arm mass in kilogram
 
 rocker2cam = 80; % distance between rocker arm and cam axes
+s_initial = 40; % initial angle between rocker and cam center - rocker axis in degree
 RPM = 200; % motor velocity in rounds per minutes
 % m = 1; % follower mass in kg
-s_initial = 40; % initial angle between rocker and cam center - rocker axis in degree
-
 
 % recommended values
 maxPressureAngle_deg = 20; % in degree
