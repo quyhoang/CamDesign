@@ -1,6 +1,6 @@
-% CAM Design Assistant
-% Dwell - Rise - Dwell - Return oscillating CAM
-% 2023-02-01
+% CAM Design Assistant for Oscillating Cam
+% Dwell - Rise - Dwell - Return 
+% Last edited 2023-02-07
 
 %%
 clc; close all; clear;
@@ -14,23 +14,27 @@ clc; close all; clear;
 
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [0 30 190 220]; % degree at which the rise/return starts/ends
-h = 3; % stroke in mm
-l_roller = 75; % distance from arm rotating axis to roller center
+eventAngle = [120 150 160 190]; % degree at which the rise/return starts/ends
+
+l_roller = 60; % 64.2 distance from arm rotating axis to roller center
 estLoad = 5; % estimated load in Newton
-l_load = 80; % distance from arm center to load
-m_roller = 0.1; % roller mass in kilogram
-rRoller = 10;
+l_load = 160; % distance from arm rotating axis to load
 
-m_rocker = 0.4; % rocker arm mass in kilogram
+hTarget = -30; % stroke in mm
+h = l_roller/l_load*hTarget; % stroke in mm
 
-rocker2cam = 80; % distance between rocker arm and cam axes
-s_initial = 40; % initial angle between rocker and cam center - rocker axis in degree
+m_roller = 0.03; % roller mass in kilogram
+rRoller = 8;
+
+m_rocker = 0.3; % rocker arm mass in kilogram
+
+rocker2cam = 91.22; %91.22 distance between rocker arm and cam axes
+s_initial = 40.06+10.74; % initial angle between rocker and cam center - rocker axis in degree
 RPM = 200; % motor velocity in rounds per minutes
 % m = 1; % follower mass in kg
 
 % recommended values
-maxPressureAngle_deg = 20; % in degree
+maxPressureAngle_deg = 30; % in degree
 kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
 step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
@@ -151,7 +155,7 @@ disp(tempA)
 % ANGULAR DISPLACEMENT
 %============================================
 
-s2rad = displacement/l_load; % convert arc length to angular displacement
+s2rad = displacement/l_roller; % convert arc length to angular displacement
 s_rad_initial = deg2rad(s_initial); % initial angular displacement in coordinate system
 s2rad = s2rad + s_rad_initial; % angular displacement
 thetaRadian = deg2rad(theta);
