@@ -1,24 +1,27 @@
-% CAM Design Assistant
-% Dwell - Rise - Dwell - Return translating CAM
-% 2022-12-07
+% CAM Design Assistant for Radial Translating Cam
+% Dwell - Rise - Dwell - Return 
+% Last edited 2023-02-07
 
 %%
-clc; close all; 
+clc; close all; clear;
 % clear;
 %============================================
-% INPUT 入力
+% Load Input
 %============================================
-% All values in degree
 
-% Job-specific values
-% eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [0 30 190 220]; % degree at which the rise/return starts/ends
-h = 3; % stroke in mm
-RPM = 200; % motor velocity in rounds per minutes
-m = 1; % follower mass in kg
+% % Data from input file
+% % eventAngle = [rise start - rise end - return start- return end]
+% eventAngle = [80 120 190 230]; % degree at which the rise/return starts/ends
+% h = 15.2; % stroke in mm
+% RPM = 200; % motor velocity in rounds per minutes
+% m = 1; % follower mass in kg
+% rRoller = 8;
+
+inputFileName = input("設定データ名を入力してください。","s");
+load(inputFileName);
 
 % recommended values
-maxPressureAngle_deg = 30; % in degree
+maxPressureAngle_deg = 25; % in degree
 kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
 step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
@@ -257,7 +260,7 @@ input(['何かキーを押すとカムの輪郭を表示します。','\n'])
 % Cam Machining process
 
 % Draw roller around cam curve and on pitch curve, sample rate is defined in input region
-figure('Name','カムの輪郭加工');
+% figure('Name','カムの輪郭加工');
 sampleRate = round(sampleRate*length(theta2)/360);
 x_sample = transpose(pitchX(1:sampleRate:length(pitchX)));
 y_sample = transpose(pitchY(1:sampleRate:length(pitchY)));
@@ -421,8 +424,30 @@ selectedKspring = Nmax/Fmax*1000;
 fSpring = -selectedKspring.*deltaX;
 % plot(fSpring); % N
 
+fCutMax = input("最大切断力を入力してください:");
+if isempty(fCutMax) || (fCutMax == 0)
+    disp("切断操作なし。");
+    fCut = 0;
+else
+    thickness = input("切断厚みを入力してください:");
+    if h < 0
+        disp("エラー：ストロークがネガティブです。");
+        return
+    else
+        cutStartAngleIndex = find(displacement>rBase+rRoller, 1 )-1;
+        % find the first index at which displacement bigger than rBase,
+        % which means after cutting process start, minus 1 so that the
+        % index become that of the position just before cutting
+        cutEndAngleIndex = find(displacement > rBase+rRoller + thickness,1);
+        % the index at which cutting process ends
+        fCut = zeros(1,length(displacement));
+        % Initialize a vector of size equal to that of displacement with all elements set to 0
+        fCut(cutStartAngleIndex:cutEndAngleIndex) = fCutMax;  
+        % Set the elements corresponding to position during cutting to max cutting force
+    end
+end
 
-parallelForce = m*acceleration - fSpring - fFriction; % in N
+parallelForce = m*acceleration - fSpring - fFriction + fCut; % in N
 perpendicularForce = parallelForce.*tanPressureAngle;
 motorTorque = displacement/1000.*perpendicularForce;
 figure;
@@ -464,13 +489,19 @@ angleLineFactor = 4;
 % Cam motion simulation
 prompt = "Show cam motion? カムの動きのシミュレーションを表示しますか? y/n [n]: ";
 txt = input(prompt,"s");
-
+if (txt == 'y')
+    prompt = "Show cam motion in separate windows with parameters displayed? y/n [n]: ";
+    separate = input(prompt,"s");
+end
 % Animate machining process if user input 'y'
 % otherwise (input 'n' or just Enter), skip
 if (txt == 'y')
-    
-    figure('Name','カムの動きのシミュレーション');
-    for loopNumber = 1:1
+    if (separate == 'y')
+        figure('Name','カムの動きのシミュレーション');
+    else
+        figure;
+    end
+for loopNumber = 1:1
     
     hold on
     plot(0,0,'o','MarkerFaceColor','r');
@@ -553,6 +584,7 @@ if (txt == 'y')
     angle2x = [0 rotatedAngleEnd(1)];
     angle2y = [rollerCenterY rotatedAngleEnd(2)];
     
+    if (separate == 'y')
     temp5 = strcat('圧角　',num2str(pressureAngle(i)),'^o     ');
     temp2 = strcat('変位　',num2str(displacement(i)-rPrime),' mm     ');
     temp3 = strcat('回転角度　',num2str(theta(i)),'^o   ');
@@ -563,12 +595,12 @@ if (txt == 'y')
     ylabel(temp4,'Color',angleColor,'FontSize',15);
     temp1 = strcat('経過時間　',num2str(time(i)),' s     ');
     xlabel(temp1,'Color',angleColor,'FontSize',15);
-    
+    end
+
     refreshdata
     pause(0.001)
     end
-    
-    end
+end
 end
 
 %% 
@@ -590,6 +622,8 @@ if ~isempty(camName)
 else
     disp('入力がないので、データは保存されていません。');
 end
+
+
 %% 
 %============================================
 % FUNCTIONS 
