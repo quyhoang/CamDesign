@@ -24,7 +24,7 @@ load(inputFileName);
 maxPressureAngle_deg = 25; % in degree
 kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
-step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
+step = .05; % for caculation, the smaller the more accurate, sampling rate in degree
 
 %============================================
 % PRELIMINARY CALCULATION
@@ -424,26 +424,29 @@ selectedKspring = Nmax/Fmax*1000;
 fSpring = -selectedKspring.*deltaX;
 % plot(fSpring); % N
 
-fCutMax = input("最大切断力を入力してください:");
+fCutMax = input("最大切断力(N)を入力してください:");
 if isempty(fCutMax) || (fCutMax == 0)
     disp("切断操作なし。");
     fCut = 0;
 else
-    thickness = input("切断厚みを入力してください:");
     if h < 0
         disp("エラー：ストロークがネガティブです。");
         return
     else
-        cutStartAngleIndex = find(displacement>rBase+rRoller, 1 )-1;
+        thickness = input("切断厚み(mm)を入力してください:");
+        cutClearance = input("パンチからワークまでの初期距離(mm)を入力してください:");
+        backClampForce = input("最大バック クランプ スプリング力(N)を入力してください:");
+        cutStartAngleIndex = find(displacement>rBase+rRoller+cutClearance, 1 )-1;
         % find the first index at which displacement bigger than rBase,
         % which means after cutting process start, minus 1 so that the
         % index become that of the position just before cutting
-        cutEndAngleIndex = find(displacement > rBase+rRoller + thickness,1);
+        cutEndAngleIndex = find(displacement > rBase+rRoller+cutClearance + thickness,1);
         % the index at which cutting process ends
         fCut = zeros(1,length(displacement));
         % Initialize a vector of size equal to that of displacement with all elements set to 0
-        fCut(cutStartAngleIndex:cutEndAngleIndex) = fCutMax;  
+        fCut(cutStartAngleIndex:cutEndAngleIndex) = fCutMax+backClampForce;  
         % Set the elements corresponding to position during cutting to max cutting force
+        
     end
 end
 
@@ -585,10 +588,11 @@ for loopNumber = 1:1
     angle2y = [rollerCenterY rotatedAngleEnd(2)];
     
     if (separate == 'y')
+    temp6 = strcat('曲率半径　',num2str(curvature(i)),' mm     ');   
     temp5 = strcat('圧角　',num2str(pressureAngle(i)),'^o     ');
     temp2 = strcat('変位　',num2str(displacement(i)-rPrime),' mm     ');
     temp3 = strcat('回転角度　',num2str(theta(i)),'^o   ');
-    updatedTitle = {temp3; temp2; temp5};
+    updatedTitle = {temp3; temp2; temp5; temp6};
     [titleAni,] = title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
     
     temp4 = strcat('位置　',num2str(displacement(i)),' mm     ');
@@ -598,7 +602,7 @@ for loopNumber = 1:1
     end
 
     refreshdata
-    pause(0.001)
+    pause(0.01)
     end
 end
 end

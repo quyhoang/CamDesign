@@ -10,7 +10,7 @@ clc; close all;
 %============================================
 % eventAngle = [rise start - rise end - return start- return end]
 eventAngle = [0 30 190 220]; % degree at which the rise/return starts/ends
-h = 15; % stroke in mm
+h = 5; % stroke in mm
 RPM = 200; % motor velocity in rounds per minutes
 m = 1; % follower mass in kg
 rRoller = 6;
@@ -169,6 +169,13 @@ theta2 = deg2rad(theta);
 %
 % Plot cam profile
 [camSurfX, camSurfY] = offsetIn(pitchX,pitchY,rRoller);
+
+x_cord = transpose(camSurfX);
+y_cord = transpose(camSurfY);
+z_cord = zeros(length(theta2),1);
+
+camProfile = [x_cord y_cord z_cord];
+writematrix(camProfile,'camProfile.txt','Delimiter','tab');
 
 %%
 %============================================

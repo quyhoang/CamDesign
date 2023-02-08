@@ -6,7 +6,7 @@ clc; close all; clear;
 
 % Job-specific values
 % eventAngle = [rise start - rise end - return start- return end]
-eventAngle = [80 120 190 230]; % degree at which the rise/return starts/ends
+eventAngle = [1 41 190 230]; % degree at which the rise/return starts/ends
 h = 15.2; % stroke in mm
 RPM = 200; % motor velocity in rounds per minutes
 m = 1; % follower mass in kg
