@@ -7,24 +7,27 @@ clc; close all; clear;
 
 % All values in degree
 % Input vectors
-transition = [5 0; 50 -3.2; 100 -3.2; 170 -2.25; 260 -2.25; 350 0];
+transition = [30 0; 130 3.5; 260 3.5; 350 0];
 transition_angle = transition(:, 1)';
 transition_displacement = transition(:, 2)';
 
-l_roller = 40; % distance from arm rotating axis to roller center
-l_load = 80; % distance from arm center to load
+initial_angular_displacement = 30;
+s_rad_initial = deg2rad(initial_angular_displacement);
+
+l_roller = 65; % distance from arm rotating axis to roller center
+l_load = 52; % distance from arm center to load
 % l_roller/l_load = displacement_roller/displacement_load
 % displacement_roller = displacement_load*l_roller/l_load
 % All calculation is performed on displacement of roller
-transition_displacement = transition_displacement*l_roller/l_load;
+%transition_displacement = transition_displacement*l_roller/l_load;
 
-estLoad = 5; % estimated load in Newton
+estLoad = 10; % estimated load in Newton
 m_roller = 0.1; % roller mass in kilogram
-rRoller = 10;
+rRoller = 9.5;
 
 m_rocker = 0.4; % rocker arm mass in kilogram
 
-rocker2cam = 80; % distance between rocker arm axis and cam axis
+rocker2cam = 94.2; % distance between rocker arm axis and cam axis
 RPM = 200; % motor velocity in rounds per minutes
 % m = 1; % follower mass in kg
 
@@ -91,18 +94,17 @@ end
 % Plot position vs angle in cartesian coordinate
 figure;
 plot(theta, displacement);
-% xlim([0 T]);
+xlim([0 360]);
 xlabel({'degree'},'FontSize',15,'FontWeight','light','Color','b');
 ylim([-2*abs(h)+h/2 2*abs(h)+h/2]);
 ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
 
 figure;
-subplot(3,1,1);
-plot(time,displacement);
+plot(theta,displacement);
 grid on;
 grid minor;
-xlim([0 T]);
-xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
+xlim([0 360]);
+xlabel({'回転角度'},'FontSize',15,'FontWeight','light','Color','b');
 ylim([-2*abs(h)+h/2 2*abs(h)+h/2]);
 ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
 % legend("位置 s");
@@ -110,35 +112,33 @@ ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
     'Color','blue');
 tit.FontSize = 15;
 
-%============================================
-% VELOCITY
+%% VELOCITY
 %============================================
 % velocity with respect to time
 velocity = diff(displacement)/timeStep;
 velocity = [velocity displacement(1)-displacement(length(displacement))]; %add the last element to make the length of vv and theta equal
-subplot(3,1,2);
-plot(time,velocity);
+figure;
+plot(theta,velocity);
 grid on;
 grid minor;
-xlim([0 T]);
-xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
+xlim([0 360]);
+xlabel({'回転角度'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'速度','mm/s'},'FontSize',15,'FontWeight','light','Color','b');
 %title({'';'速度　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
 tempV = strcat('最大速度 ',num2str(max(velocity)),' mm/s');
 title(tempV ,'Color','b','FontSize',15,'FontWeight','light');
 
-%============================================
-% ACCELERATION
+%% ACCELERATION
 %============================================
 % acceleration with respect to time
 acceleration = diff(velocity)/timeStep;
 acceleration = [acceleration velocity(1)-velocity(length(velocity))]/1000;
-subplot(3,1,3);
-plot(time,acceleration);
-grid on; grid minor;
-
-xlim([0 T]);
-xlabel({'t(s)'},'FontSize',15,'FontWeight','light','Color','b');
+figure;
+plot(theta,acceleration);
+grid on; 
+grid minor;
+xlim([0 360]);
+xlabel({'回転角度'},'FontSize',15,'FontWeight','light','Color','b');
 ylabel({'加速','m/s^2'},'FontSize',15,'FontWeight','light','Color','b');
 
 %title({'';'加速　vs　時間';''},'Color','b','FontSize',15,'FontWeight','light');
@@ -148,20 +148,18 @@ title(tempA,'Color','b','FontSize',15,'FontWeight','light');
 disp(tempV)
 disp(tempA)
 
-%%
-%============================================
-% ANGULAR DISPLACEMENT
+%% ANGULAR DISPLACEMENT
 %============================================
 
 s2rad = displacement/l_load; % convert arc length to angular displacement
-s_rad_initial = pi/6; % initial angular displacement in coordinate system
+%s_rad_initial = pi/6; % initial angular displacement in coordinate system
 s2rad = s2rad + s_rad_initial; % angular displacement
 thetaRadian = deg2rad(theta);
 
 roller_position1 = l_roller*exp(s2rad*1i);  %unregulated position, rocker is at center
 roller_position = roller_position1 - rocker2cam; % cam is at center, rocker axis is at (-rocker2cam,0)
 pitchCurve = roller_position.*exp(thetaRadian*1i); 
-% move points counterclockwise, this means the cam rotates clockwise 
+% move points counterclockwise, this means the cam rotates clockwise
 
 rollerCenterX = real(roller_position);
 rollerCenterY = imag(roller_position);
@@ -169,9 +167,7 @@ rollerCenterY = imag(roller_position);
 pitchX = real(pitchCurve); pitchY = imag(pitchCurve);
 [camSurfX,camSurfY] = offsetIn(pitchX,pitchY,rRoller);
 
-%%
-%============================================
-% RADIUS OF CURVATURE
+%% RADIUS OF CURVATURE
 %============================================
 
 curvature = zeros(size(camSurfX));
