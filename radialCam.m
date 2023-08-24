@@ -1,23 +1,19 @@
-classdef oscillatingCam < Cam
-    
+classdef radialCam < Cam
+
     properties
-        transition 
-        l_roller
-        l_load
+        eventAngle 
+        h
         
         % Additional subclass properties
-        estLoad 
-        m_rocker
-        rocker2cam
         
     end
     
     methods
         % Implement abstract method
         function calculate(obj)
-            % Calculations
+            % Calculations 
         end
         
     end
-    
+
 end
