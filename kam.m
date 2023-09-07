@@ -1,6 +1,7 @@
-classdef kam
+classdef kam  < handle
     %Kam is a general class representing cam mechanism
     % there are children classes of specific cam type
+    % handle class will pass instance to method as reference
     
     properties
         transition
@@ -8,9 +9,9 @@ classdef kam
         transition_displacement
 
         m_roller
-        l_roller
+
         m_load
-        l_load
+
         rRoller
 
         RPM
@@ -33,8 +34,16 @@ classdef kam
         displacement = 0
         velocity = 0
         acceleration = 0
+
+        roller_position = 0 % center of roller
+        pitchCurve = 0
+        pitchX = 0
+        pitchY = 0
+        camSurfX = 0
+        camSurfY = 0
     end
     
+
     methods
         function obj = kam(instanceName)
             % Constructor
@@ -59,8 +68,12 @@ classdef kam
             obj.timeStep = obj.T / size(obj.time, 2);
 
             obj = obj.calculate_displacement();
-            obj = calculate_velocity(obj);
-            obj = calculate_acceleration(obj);
+            obj = obj.calculate_velocity();
+            obj = obj.calculate_acceleration();
+
+            obj = obj.calculate_roller_position();
+            obj = obj.calculate_pitchCurve();
+            obj = obj.calculate_profile();
 
             % Validate that all properties have been assigned values
             propertyList = properties(obj);
@@ -178,7 +191,7 @@ classdef kam
             end
         end
         
-        function shows(obj)
+        function pos(obj)
             % Plot position vs angle in cartesian coordinate
 
             figure;
@@ -202,7 +215,7 @@ classdef kam
             %add the last element to make the length of vv and theta equal
         end
 
-        function showv(obj)
+        function velo(obj)
             % Plot velocity vs angle in cartesian coordinate
 
             figure;
@@ -225,7 +238,7 @@ classdef kam
             obj.acceleration = [obj.acceleration obj.velocity(1)-obj.velocity(length(obj.velocity))]/1000;
         end
 
-        function showa(obj)
+        function accel(obj)
             % Plot acceleration vs angle in cartesian coordinate
 
             figure;
@@ -238,8 +251,39 @@ classdef kam
             tempA = strcat('最大加速  ', num2str(max(obj.acceleration)),' m/s^2');
             [tit,] = title({'';'A Diagram';tempA},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
                 'Color','blue');
-           tit.FontSize = 15;
-        end        
+            tit.FontSize = 15;
+        end 
 
+        function obj = calculate_pitchCurve(obj)
+            thetaRadian = deg2rad(obj.theta);
+            obj.pitchCurve = obj.roller_position.*exp(thetaRadian*1i);
+            obj.pitchX = real(obj.pitchCurve); 
+            obj.pitchY = imag(obj.pitchCurve);
+        end
+   
+        function pitch(obj)
+            % Show pitch curve
+            figure;
+            plot(obj.pitchX,obj.pitchY,'color',obj.pitchColor)
+            axis equal; grid on; grid minor;
+        end
+        
+        function obj = calculate_profile(obj)
+            [obj.camSurfX,obj.camSurfY] = offsetIn(obj.pitchX,obj.pitchY,obj.rRoller);
+        end
+
+        function profile(obj)
+            % Show cam profile
+            figure;
+            plot(obj.camSurfX,obj.camSurfY,'color',obj.camColor)
+            axis equal; grid on; grid minor;
+        end
+
+
+
+    end
+
+    methods (Abstract)
+        calculate_roller_position(obj) % Abstract method, to be defined by each child class
     end
 end
