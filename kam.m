@@ -21,8 +21,8 @@ classdef kam  < handle
         pitchColor
         camColor
 
-        maxPressureAngle
-        maxPressureAngle_deg
+        allowedPressureAngle
+        allowedPressureAngle_deg
         theta
         T
         time
@@ -41,6 +41,12 @@ classdef kam  < handle
         pitchY = 0
         camSurfX = 0
         camSurfY = 0
+
+        curvature = 0
+        min_curvature = 0
+
+        pressureAngle = 0
+        max_pressureAngle = 0
     end
     
 
@@ -61,7 +67,7 @@ classdef kam  < handle
             obj = obj.readParameters(parameterFilePath);
 
             % Additional calculations
-            obj.maxPressureAngle = deg2rad(obj.maxPressureAngle_deg);
+            obj.allowedPressureAngle = deg2rad(obj.allowedPressureAngle_deg);
             obj.theta = 0:obj.step:360;
             obj.T = 60/obj.RPM;
             obj.time = linspace(0, obj.T, length(obj.theta));
@@ -74,6 +80,8 @@ classdef kam  < handle
             obj = obj.calculate_roller_position();
             obj = obj.calculate_pitchCurve();
             obj = obj.calculate_profile();
+            obj = obj.calculate_curvature();
+            obj = obj.calculate_pressure_angle();
 
             % Validate that all properties have been assigned values
             propertyList = properties(obj);
@@ -82,6 +90,10 @@ classdef kam  < handle
                     error('Value not specified for: %s', propertyList{i});
                 end
             end
+
+             % Check that conditions for the CAM are met
+             assert(obj.max_pressureAngle < obj.allowedPressureAngle_deg, 'Max pressure angle is too large.');
+             assert(obj.min_curvature > obj.rRoller, 'Minimum radius of curvature is too small.');
         end
         
         function obj = readParameters(obj, parameterFilePath)
@@ -279,11 +291,178 @@ classdef kam  < handle
             axis equal; grid on; grid minor;
         end
 
+        function export(obj)
+            % Export profile data as txt file
+            % Save both camProfile.txt and camDirection.txt files to Creo
+            % working directory and then type "gcam" or click the カム作成
+            % icon, the 3D model of the cam will be created.
+            
+            x_cord = transpose(obj.camSurfX);
+            y_cord = transpose(obj.camSurfY);
+            z_cord = zeros(length(obj.theta),1);
 
+            camProfile = [x_cord y_cord z_cord];
+            writematrix(camProfile,'camProfile.txt','Delimiter','tab');
 
+            % Show cam motion direction
+            indices = 2.^(0:log2(length(x_cord)));
+            x_direction = x_cord(indices);
+            y_direction = y_cord(indices);
+            z_direction = ones(size(x_direction));
+            camDirection = [x_direction y_direction z_direction];
+            writematrix(camDirection,'camDirection.txt','Delimiter','tab');
+
+            str = "CreoAutomation.exe がアクティブで、" + ...
+                "txt データが Creo 作業ディレクトリに保存されている場合、" + ...
+                "「gcam」を押すか、UI からか　カムの 3D モデルが作成されます。";
+            disp(str)
+        end
+
+        function machining(obj)
+            % Show pitch curve, cutting tool, and cam profile
+
+            splRate = round(obj.sampleRate*length(obj.theta)/360);
+            x_sample = transpose(obj.pitchX(1:splRate:length(obj.pitchX)));
+            y_sample = transpose(obj.pitchY(1:splRate:length(obj.pitchY)));
+
+            figure; 
+
+            plot(obj.pitchX,obj.pitchY,'color',obj.pitchColor)
+            hold on
+            plot(obj.camSurfX,obj.camSurfY,'color',obj.camColor)
+            hold on
+            axis equal; grid on; 
+
+            for k = 2:1:length(x_sample)
+                viscircles([x_sample(k),y_sample(k)],obj.rRoller,'LineWidth',1,'Color',obj.rollerColor);
+                xlim([min(obj.pitchX)-obj.rRoller*2 max(obj.pitchX)+obj.rRoller*2]);
+                ylim([min(obj.pitchY)-obj.rRoller*2 max(obj.pitchY)+obj.rRoller*2]);
+                axis equal; grid on; 
+                drawnow
+            end
+            plot(obj.camSurfX,obj.camSurfY,'color',obj.camColor)
+            xlim([min(obj.pitchX)-obj.rRoller*2 max(obj.pitchX)+obj.rRoller*2]);
+            ylim([min(obj.pitchY)-obj.rRoller*2 max(obj.pitchY)+obj.rRoller*2]);
+            axis equal; grid on; grid minor;
+        end
+
+        function obj = calculate_curvature(obj)
+            obj.curvature = zeros(size(obj.camSurfX));
+            L = length(obj.camSurfX);
+            % Boundary. Note that the first and the last points on profile curve are the
+            % same
+            obj.curvature(1) = circumscribedR([obj.camSurfX(L-1) obj.camSurfX(1) obj.camSurfX(2)],[obj.camSurfY(L-1) obj.camSurfY(1) obj.camSurfY(2)]);
+            obj.curvature(L) = circumscribedR([obj.camSurfX(L-1) obj.camSurfX(L) obj.camSurfX(2)],[obj.camSurfY(L-1) obj.camSurfY(L) obj.camSurfY(2)]);
+
+            for k = 1:1:L-2
+                X = obj.camSurfX(k:1:k+2);
+                Y = obj.camSurfY(k:1:k+2);
+                obj.curvature(k+1) = circumscribedR(X,Y);
+            end
+
+            obj.min_curvature = min(obj.curvature);
+        end
+
+        function curv(obj)
+            % Show radius of curvature
+
+            figure;
+            yyaxis left
+            angleColor = 'b';
+            semilogy(obj.theta, obj.curvature,'Color',angleColor);
+            ax = gca;
+            ax.YColor = angleColor;
+            grid on;
+            grid minor;
+            xlim([0 360]);
+            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+            ylabel({'曲率半径','mm'},'FontSize',15,'FontWeight','light','Color',angleColor);
+
+            yyaxis right
+            strokeColor = [0.6350 0.0780 0.1840];
+            plot(obj.theta,obj.displacement,'Color',strokeColor);
+            ax = gca;
+            ax.YColor = strokeColor;
+            grid on;
+            grid minor;
+            xlim([0 360]);
+            % ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
+            % xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
+            ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
+            hold on
+
+            tempP = strcat('最小曲率半径 ',num2str(min(obj.curvature)),'mm');
+            %  title(temp,'Color','b','FontSize',15,'FontWeight','light');
+
+            title({'';'曲率半径・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
+
+            disp(strcat('最小曲率半径: ',num2str(min(obj.curvature)),'mm'));
+        end
+
+        function pressure_angle(obj)
+            % Show pressure angle
+            
+            figure;
+            yyaxis left
+            angleColor = 'b';
+            plot(obj.theta, obj.pressureAngle,'Color',angleColor);
+            ax = gca;
+            ax.YColor = angleColor;
+            grid on;
+            grid minor;
+            xlim([0 360]);
+            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+            ylabel({'圧角','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+
+            yyaxis right
+            strokeColor = [0.6350 0.0780 0.1840];
+            plot(obj.theta,obj.displacement,'Color',strokeColor);
+            ax = gca;
+            ax.YColor = strokeColor;
+            grid on;
+            grid minor;
+            xlim([0 360]);
+            rPrime = obj.rBase + obj.rRoller;
+            h = obj.fullStroke;
+            ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
+            % xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
+            ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
+            hold on
+
+            tempP = strcat('最大圧角 ',num2str(max(obj.pressureAngle)),'^o');
+            %  title(temp,'Color','b','FontSize',15,'FontWeight','light');
+
+            title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
+
+            disp(strcat('最大圧角: ',num2str(max(obj.pressureAngle)),'度'));
+        end
     end
+
 
     methods (Abstract)
         calculate_roller_position(obj) % Abstract method, to be defined by each child class
     end
+
+    methods (Abstract)
+        calculate_pressure_angle(obj) % Abstract method, to be defined by each child class
+    end
+
+    methods (Abstract)
+        simulation(obj) % Abstract method, to be defined by each child class
+    end
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
