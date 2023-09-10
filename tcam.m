@@ -2,7 +2,6 @@ classdef tcam < kam
     %Translating cam
     
     properties
-        rBase
     end
     
     methods
@@ -15,8 +14,7 @@ classdef tcam < kam
         function obj = calculate_roller_position(obj)
             % 
 
-            rPrime = obj.rBase + obj.rRoller;
-            obj.roller_position = obj.displacement + rPrime; % cam is at center
+            obj.roller_position = obj.displacement + obj.rPrime; % cam is at center
         end
 
         function obj = calculate_pressure_angle(obj)
@@ -39,12 +37,10 @@ classdef tcam < kam
 
         function simulation(obj)
             %
-            separate = 'y';
             angleColor = 'b';
             angleLineFactor = 4;
             [angleEndPointX,angleEndPointY] = offsetIn(obj.pitchX,obj.pitchY,-angleLineFactor*obj.rRoller);
             theta2 = deg2rad(obj.theta);
-            rPrime = obj.rBase + obj.rRoller;
             h = obj.fullStroke;
             position = obj.displacement + obj.rBase + obj.rRoller;
             figure;
@@ -104,7 +100,7 @@ classdef tcam < kam
             rotatedAngleEnd = rotateCw([angleEndPointX(1);angleEndPointY(1)],-pi/2);
             angle2x = [0 rotatedAngleEnd(1)];
             angle2y = [rollerCenterY rotatedAngleEnd(2)];
-            pl6 = plot(angle2x,angle2y,'MarkerFaceColor',[0 0.4470 0.7410]);
+%             pl6 = plot(angle2x,angle2y,'MarkerFaceColor',[0 0.4470 0.7410]);
             pl6.XDataSource = 'angle2x';
             pl6.YDataSource = 'angle2y';
 
@@ -129,19 +125,17 @@ classdef tcam < kam
                 angle2x = [0 rotatedAngleEnd(1)];
                 angle2y = [rollerCenterY rotatedAngleEnd(2)];
 
-                if (separate == 'y')
-                    temp6 = strcat('曲率半径　',num2str(obj.curvature(i)),' mm     ');
-                    temp5 = strcat('圧角　',num2str(obj.pressureAngle(i)),'^o     ');
-                    temp2 = strcat('変位　',num2str(position(i)-rPrime),' mm     ');
-                    temp3 = strcat('回転角度　',num2str(obj.theta(i)),'^o   ');
-                    updatedTitle = {temp3; temp2; temp5; temp6};
-                    [titleAni,] = title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
+                temp6 = strcat('曲率半径　',num2str(obj.curvature(i)),' mm     ');
+                temp5 = strcat('圧角　',num2str(obj.pressureAngle(i)),'^o     ');
+                temp2 = strcat('変位　',num2str(position(i)-obj.rPrime),' mm     ');
+                temp3 = strcat('回転角度　',num2str(obj.theta(i)),'^o   ');
+                updatedTitle = {temp3; temp2; temp5; temp6};
+                [titleAni,] = title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
 
-                    temp4 = strcat('位置　',num2str(position(i)),' mm     ');
-                    ylabel(temp4,'Color',angleColor,'FontSize',15);
-                    temp1 = strcat('経過時間　',num2str(obj.time(i)),' s     ');
-                    xlabel(temp1,'Color',angleColor,'FontSize',15);
-                end
+                temp4 = strcat('位置　',num2str(position(i)),' mm     ');
+                ylabel(temp4,'Color',angleColor,'FontSize',15);
+                temp1 = strcat('経過時間　',num2str(obj.time(i)),' s     ');
+                xlabel(temp1,'Color',angleColor,'FontSize',15);
 
                 refreshdata
                 pause(0.01)

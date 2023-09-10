@@ -24,7 +24,7 @@ load(inputFileName);
 maxPressureAngle_deg = 25; % in degree
 kFriction = 0.7;
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
-step = .05; % for caculation, the smaller the more accurate, sampling rate in degree
+step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
 
 %============================================
 % PRELIMINARY CALCULATION

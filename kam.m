@@ -4,31 +4,33 @@ classdef kam  < handle
     % handle class will pass instance to method as reference
     
     properties
-        transition
-        transition_angle
-        transition_displacement
+        transition % Input transition matrix
+        transition_angle % Angle values extracted from the transition matrix
+        transition_displacement % Displacement values extracted from the transition matrix
 
-        m_roller
+        m_roller % Roller mass in kilograms
 
-        m_load
+        m_load % Load mass in kilograms
 
-        rRoller
+        rRoller % Radius of the roller
 
-        RPM
-        kFriction
+        rBase % Base radius
+        rPrime = 0 % Prime radius (roller radius plus base radius)
+        RPM % Motor velocity in rounds per minutes
+        kFriction % Friction coefficient
 
-        rollerColor
-        pitchColor
-        camColor
+        rollerColor % Color to use for the roller in graphics
+        pitchColor % Color to use for the pitch in graphics
+        camColor % Color to use for the cam in graphics
 
-        allowedPressureAngle
-        allowedPressureAngle_deg
-        theta
-        T
-        time
-        timeStep
-        sampleRate
-        step
+        allowedPressureAngle % Max pressure angle in radian
+        allowedPressureAngle_deg % Max pressure angle in degree
+        theta % Range of angles from 0 to 360 with step size as defined by 'step'
+        T % Period of moving 360 degrees, in seconds
+        time % Array of time values corresponding to each angle in 'theta'
+        timeStep % Convert step in degree to step in time
+        sampleRate % For animation
+        step % step size of theta
 
         fullStroke = 0
         displacement = 0
@@ -37,16 +39,16 @@ classdef kam  < handle
 
         roller_position = 0 % center of roller
         pitchCurve = 0
-        pitchX = 0
-        pitchY = 0
-        camSurfX = 0
-        camSurfY = 0
+        pitchX = 0 % x coordinate of pitch curve
+        pitchY = 0 % y coordinate of pitch curve
+        camSurfX = 0 % x coordinate of cam profile
+        camSurfY = 0 % y coordinate of cam profile
 
-        curvature = 0
-        min_curvature = 0
+        curvature = 0 % Radius of curvature
+        min_curvature = 0 % Minimum allowable radius of curvature
 
         pressureAngle = 0
-        max_pressureAngle = 0
+        max_pressureAngle = 0 % Maximum allowable pressure angle
     end
     
 
@@ -67,12 +69,14 @@ classdef kam  < handle
             obj = obj.readParameters(parameterFilePath);
 
             % Additional calculations
+            obj.rPrime = obj.rBase + obj.rRoller; 
             obj.allowedPressureAngle = deg2rad(obj.allowedPressureAngle_deg);
             obj.theta = 0:obj.step:360;
             obj.T = 60/obj.RPM;
             obj.time = linspace(0, obj.T, length(obj.theta));
             obj.timeStep = obj.T / size(obj.time, 2);
 
+            % Calculating cam dynamic properties
             obj = obj.calculate_displacement();
             obj = obj.calculate_velocity();
             obj = obj.calculate_acceleration();
@@ -422,9 +426,8 @@ classdef kam  < handle
             grid on;
             grid minor;
             xlim([0 360]);
-            rPrime = obj.rBase + obj.rRoller;
             h = obj.fullStroke;
-            ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
+            ylim([obj.rPrime-2*abs(h)+h/2 obj.rPrime+2*abs(h)+h/2]);
             % xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
             ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
             hold on

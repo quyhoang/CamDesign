@@ -1,12 +1,18 @@
+% Multi-phase oscillating CAM
+% 2023-07-12
 
+%% INPUT 入力
+%============================================
+clc; close all; clear;
 
+% All values in degree
 % Input vectors
 transition = [30 0; 130 3.5; 260 3.5; 350 0];
 transition_angle = transition(:, 1)';
 transition_displacement = transition(:, 2)';
 
-initial_angular_displacement = 30;
-s_rad_initial = deg2rad(initial_angular_displacement);
+initial_angular_displacement = 30;  % initial angular displacement in coordinate system
+s_rad_initial = deg2rad(initial_angular_displacement); 
 
 l_roller = 65; % distance from arm rotating axis to roller center
 l_load = 52; % distance from arm center to load
@@ -15,7 +21,7 @@ l_load = 52; % distance from arm center to load
 % All calculation is performed on displacement of roller
 %transition_displacement = transition_displacement*l_roller/l_load;
 
-estLoad = 10; % estimated load in Newton
+m_load = 1; % load mass in kilogram
 m_roller = 0.1; % roller mass in kilogram
 rRoller = 9.5;
 
@@ -146,7 +152,6 @@ disp(tempA)
 %============================================
 
 s2rad = displacement/l_load; % convert arc length to angular displacement
-%s_rad_initial = pi/6; % initial angular displacement in coordinate system
 s2rad = s2rad + s_rad_initial; % angular displacement
 thetaRadian = deg2rad(theta);
 
@@ -266,7 +271,7 @@ inertialMoment = inertialMoment1 + inertialMoment2;
 combinedTorque = inertialMoment*angularAcceleration;
 regulatedMinimumSpringTorque = min(combinedTorque)*ones(size(combinedTorque));
 
-estimatedLoadTorque = -l_load/1000*estLoad;
+estimatedLoadTorque = -l_load/1000*(m_load*10);
 
 motorInducedTorque = combinedTorque - regulatedMinimumSpringTorque - estimatedLoadTorque;
 
