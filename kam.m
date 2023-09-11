@@ -14,7 +14,6 @@ classdef kam  < handle
 
         rRoller % Radius of the roller
 
-        rBase % Base radius
         rPrime = 0 % Prime radius (roller radius plus base radius)
         RPM % Motor velocity in rounds per minutes
         kFriction % Friction coefficient
@@ -22,6 +21,7 @@ classdef kam  < handle
         rollerColor % Color to use for the roller in graphics
         pitchColor % Color to use for the pitch in graphics
         camColor % Color to use for the cam in graphics
+        angleColor % to use in graphics
 
         allowedPressureAngle % Max pressure angle in radian
         allowedPressureAngle_deg % Max pressure angle in degree
@@ -69,7 +69,7 @@ classdef kam  < handle
             obj = obj.readParameters(parameterFilePath);
 
             % Additional calculations
-            obj.rPrime = obj.rBase + obj.rRoller; 
+
             obj.allowedPressureAngle = deg2rad(obj.allowedPressureAngle_deg);
             obj.theta = 0:obj.step:360;
             obj.T = 60/obj.RPM;
@@ -85,6 +85,7 @@ classdef kam  < handle
             obj = obj.calculate_pitchCurve();
             obj = obj.calculate_profile();
             obj = obj.calculate_curvature();
+            obj = obj.calculate_roller_position();
             obj = obj.calculate_pressure_angle();
 
             % Validate that all properties have been assigned values
@@ -390,16 +391,11 @@ classdef kam  < handle
             grid on;
             grid minor;
             xlim([0 360]);
-            % ylim([rPrime-2*abs(h)+h/2 rPrime+2*abs(h)+h/2]);
-            % xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
             ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
             hold on
 
             tempP = strcat('最小曲率半径 ',num2str(min(obj.curvature)),'mm');
-            %  title(temp,'Color','b','FontSize',15,'FontWeight','light');
-
             title({'';'曲率半径・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
-
             disp(strcat('最小曲率半径: ',num2str(min(obj.curvature)),'mm'));
         end
 
@@ -426,9 +422,6 @@ classdef kam  < handle
             grid on;
             grid minor;
             xlim([0 360]);
-            h = obj.fullStroke;
-            ylim([obj.rPrime-2*abs(h)+h/2 obj.rPrime+2*abs(h)+h/2]);
-            % xlabel({'角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
             ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
             hold on
 
@@ -451,10 +444,9 @@ classdef kam  < handle
     end
 
     methods (Abstract)
-        simulation(obj) % Abstract method, to be defined by each child class
+        animation(obj) % Abstract method, to be defined by each child class
     end
 end
-
 
 
 
