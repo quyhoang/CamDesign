@@ -10,7 +10,6 @@ classdef tcam < kam
             % Constructor
 
             obj = obj@kam(instanceName)
-            obj.rPrime = obj.rBase + obj.rRoller; 
         end
 
         function obj = calculate_roller_position(obj)
