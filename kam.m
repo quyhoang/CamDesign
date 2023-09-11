@@ -2,7 +2,7 @@ classdef kam  < handle
     %Kam is a general class representing cam mechanism
     % there are children classes of specific cam type
     % handle class will pass instance to method as reference
-    
+
     properties
         transition % Input transition matrix
         transition_angle % Angle values extracted from the transition matrix
@@ -50,7 +50,7 @@ classdef kam  < handle
         pressureAngle = 0
         max_pressureAngle = 0 % Maximum allowable pressure angle
     end
-    
+
 
     methods
         function obj = kam(instanceName)
@@ -75,6 +75,9 @@ classdef kam  < handle
             obj.T = 60/obj.RPM;
             obj.time = linspace(0, obj.T, length(obj.theta));
             obj.timeStep = obj.T / size(obj.time, 2);
+            if isprop(obj,'rBase') % Calculate rPrime is the child class has rBase attribute
+                obj.rPrime = obj.rBase + obj.rRoller;
+            end
 
             % Calculating cam dynamic properties
             obj = obj.calculate_displacement();
@@ -96,11 +99,11 @@ classdef kam  < handle
                 end
             end
 
-             % Check that conditions for the CAM are met
-             assert(obj.max_pressureAngle < obj.allowedPressureAngle_deg, 'Max pressure angle is too large.');
-             assert(obj.min_curvature > obj.rRoller, 'Minimum radius of curvature is too small.');
+            % Check that conditions for the CAM are met
+            assert(obj.max_pressureAngle < obj.allowedPressureAngle_deg, 'Max pressure angle is too large.');
+            assert(obj.min_curvature > obj.rRoller, 'Minimum radius of curvature is too small.');
         end
-        
+
         function obj = readParameters(obj, parameterFilePath)
             % Check whether all attributes are read in properly
 
@@ -122,38 +125,38 @@ classdef kam  < handle
                     if ~isempty(scIndex)
                         varValue = strtrim(varValue(1:scIndex-1));
                     end
-                    
+
                     % Convert to number or matrix if possible, otherwise keep as string
                     numericValue = str2num(varValue);
                     if ~isempty(numericValue)
                         varValue = numericValue;
                     end
-                    
+
                     % Assign the parsed value to the respective property of the object
                     obj.(varName) = varValue;
                 end
             end
             fclose(fid);
         end
-        
+
         function filtered_pairs = filterConsecutivePairs(obj)
             % manipulate cam transition data
-            
+
             % Add 0 to the beginning and end of transition_displacement
             obj.transition_displacement = horzcat(0, obj.transition_displacement, 0);
-        
+
             % Add 0 and 360 to the beginning and the end of transition_angle
             obj.transition_angle = horzcat(0, obj.transition_angle, 360);
-        
+
             % Check that all elements in transition_angle are unique
             assert(all(diff(obj.transition_angle) > 0) && (length(unique(obj.transition_angle)) == length(obj.transition_angle)), 'The angles must be unique and monotonic.');
-        
+
             % Initialize filtered_pairs as an empty array with the maximum possible size
             filtered_pairs = zeros(length(obj.transition_angle)-1, 2); % avoid dynamic allocation of memory
-        
+
             % Initialize counter
             count = 0;
-        
+
             % Iterate through the angles
             for i = 1:length(obj.transition_angle)-1
                 % Check if the current displacement is different from the next one
@@ -164,50 +167,50 @@ classdef kam  < handle
                     filtered_pairs(count, :) = [obj.transition_angle(i), obj.transition_angle(i+1)];
                 end
             end
-        
+
             % Trim filtered_pairs to its actual size
             filtered_pairs = filtered_pairs(1:count, :);
         end
-        
+
         function obj = calculate_displacement(obj)
             % Calculating displacement
             obj.displacement = zeros(size(obj.theta));
-            
+
             % Get the transition points
             filtered_pairs = obj.filterConsecutivePairs();
-            
+
             % Iterate over the transition points
             for i = 1:size(filtered_pairs, 1)
                 % Extract the start and end points of the transition
                 point = filtered_pairs(i, :);
                 h = obj.transition_displacement(obj.transition_angle == point(2)) - obj.transition_displacement(obj.transition_angle == point(1));
-                
+
                 if (abs(h) > obj.fullStroke)
                     obj.fullStroke = abs(h);
                 end
 
                 bRise = point(2) - point(1);
-                
+
                 % Calculate the three sections of the displacement curve
                 tempTheta1 = obj.theta(obj.theta >= point(1) & obj.theta < point(1) + bRise/8) - point(1);
                 sRise1 = h/(4+pi)*(pi*tempTheta1/bRise - 1/4*sin(4*pi*tempTheta1/bRise));
-                
+
                 tempTheta2 = obj.theta(obj.theta >= point(1) + bRise/8 & obj.theta < point(1) + 7*bRise/8) - point(1);
                 sRise2 = h/(4+pi)*(2 + pi*tempTheta2/bRise - 9/4*sin(pi/3 + 4*pi/3*tempTheta2/bRise));
-                
+
                 tempTheta3 = obj.theta(obj.theta >= point(1) + 7*bRise/8 & obj.theta <= point(2)) - point(1);
                 sRise3 = h/(4+pi)*(4 + pi*tempTheta3/bRise - 1/4*sin(4*pi*tempTheta3/bRise));
-                
+
                 % Combine all parts and add the previous displacement value
                 sRise = [sRise1, sRise2, sRise3];
-                
+
                 % Update the displacement array
                 obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
                 obj.displacement(obj.theta > point(2)) = obj.displacement(obj.theta > point(2)) + sRise(end);
                 % Update the cumulative displacement for the next period
             end
         end
-        
+
         function pos(obj)
             % Plot position vs angle in cartesian coordinate
 
@@ -226,9 +229,9 @@ classdef kam  < handle
 
         function obj = calculate_velocity(obj)
             % velocity with respect to time
-            
+
             obj.velocity = diff(obj.displacement)/obj.timeStep;
-            obj.velocity = [obj.velocity obj.displacement(1)-obj.displacement(length(obj.displacement))]; 
+            obj.velocity = [obj.velocity obj.displacement(1)-obj.displacement(length(obj.displacement))];
             %add the last element to make the length of vv and theta equal
         end
 
@@ -245,12 +248,12 @@ classdef kam  < handle
             tempV = strcat('最大速度 ',num2str(max(obj.velocity)),' mm/s');
             [tit,] = title({'';'V Diagram';tempV},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
                 'Color','blue');
-           tit.FontSize = 15;
+            tit.FontSize = 15;
         end
 
         function obj = calculate_acceleration(obj)
             % acceleration with respect to time
-            
+
             obj.acceleration = diff(obj.velocity)/obj.timeStep;
             obj.acceleration = [obj.acceleration obj.velocity(1)-obj.velocity(length(obj.velocity))]/1000;
         end
@@ -269,22 +272,22 @@ classdef kam  < handle
             [tit,] = title({'';'A Diagram';tempA},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
                 'Color','blue');
             tit.FontSize = 15;
-        end 
+        end
 
         function obj = calculate_pitchCurve(obj)
             thetaRadian = deg2rad(obj.theta);
             obj.pitchCurve = obj.roller_position.*exp(thetaRadian*1i);
-            obj.pitchX = real(obj.pitchCurve); 
+            obj.pitchX = real(obj.pitchCurve);
             obj.pitchY = imag(obj.pitchCurve);
         end
-   
+
         function pitch(obj)
             % Show pitch curve
             figure;
             plot(obj.pitchX,obj.pitchY,'color',obj.pitchColor)
             axis equal; grid on; grid minor;
         end
-        
+
         function obj = calculate_profile(obj)
             [obj.camSurfX,obj.camSurfY] = offsetIn(obj.pitchX,obj.pitchY,obj.rRoller);
         end
@@ -301,7 +304,7 @@ classdef kam  < handle
             % Save both camProfile.txt and camDirection.txt files to Creo
             % working directory and then type "gcam" or click the カム作成
             % icon, the 3D model of the cam will be created.
-            
+
             x_cord = transpose(obj.camSurfX);
             y_cord = transpose(obj.camSurfY);
             z_cord = zeros(length(obj.theta),1);
@@ -330,19 +333,19 @@ classdef kam  < handle
             x_sample = transpose(obj.pitchX(1:splRate:length(obj.pitchX)));
             y_sample = transpose(obj.pitchY(1:splRate:length(obj.pitchY)));
 
-            figure; 
+            figure;
 
             plot(obj.pitchX,obj.pitchY,'color',obj.pitchColor)
             hold on
             plot(obj.camSurfX,obj.camSurfY,'color',obj.camColor)
             hold on
-            axis equal; grid on; 
+            axis equal; grid on;
 
             for k = 2:1:length(x_sample)
                 viscircles([x_sample(k),y_sample(k)],obj.rRoller,'LineWidth',1,'Color',obj.rollerColor);
                 xlim([min(obj.pitchX)-obj.rRoller*2 max(obj.pitchX)+obj.rRoller*2]);
                 ylim([min(obj.pitchY)-obj.rRoller*2 max(obj.pitchY)+obj.rRoller*2]);
-                axis equal; grid on; 
+                axis equal; grid on;
                 drawnow
             end
             plot(obj.camSurfX,obj.camSurfY,'color',obj.camColor)
@@ -373,15 +376,14 @@ classdef kam  < handle
 
             figure;
             yyaxis left
-            angleColor = 'b';
-            semilogy(obj.theta, obj.curvature,'Color',angleColor);
+            semilogy(obj.theta, obj.curvature,'Color',obj.angleColor);
             ax = gca;
-            ax.YColor = angleColor;
+            ax.YColor = obj.angleColor;
             grid on;
             grid minor;
             xlim([0 360]);
-            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
-            ylabel({'曲率半径','mm'},'FontSize',15,'FontWeight','light','Color',angleColor);
+            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',obj.angleColor);
+            ylabel({'曲率半径','mm'},'FontSize',15,'FontWeight','light','Color',obj.angleColor);
 
             yyaxis right
             strokeColor = [0.6350 0.0780 0.1840];
@@ -401,18 +403,17 @@ classdef kam  < handle
 
         function pressure_angle(obj)
             % Show pressure angle
-            
+
             figure;
             yyaxis left
-            angleColor = 'b';
-            plot(obj.theta, obj.pressureAngle,'Color',angleColor);
+            plot(obj.theta, obj.pressureAngle,'Color',obj.angleColor);
             ax = gca;
-            ax.YColor = angleColor;
+            ax.YColor = obj.angleColor;
             grid on;
             grid minor;
             xlim([0 360]);
-            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
-            ylabel({'圧角','degree'},'FontSize',15,'FontWeight','light','Color',angleColor);
+            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color',obj.angleColor);
+            ylabel({'圧角','degree'},'FontSize',15,'FontWeight','light','Color',obj.angleColor);
 
             yyaxis right
             strokeColor = [0.6350 0.0780 0.1840];
