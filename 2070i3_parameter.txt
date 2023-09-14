@@ -21,7 +21,7 @@ fCut = 0; % Force needed to cut a workpiece
 
 
 sampleRate = 5; % for showing roller on pitch curve with distance in degree
-step = 1; % for caculation, the smaller the more accurate, sampling rate in degree
+step = .5; % for caculation, the smaller the more accurate, sampling rate in degree
 
 rollerColor = [0.4660 0.6740 0.1880];
 pitchColor = [0.8500 0.3250 0.0980];

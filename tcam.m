@@ -56,7 +56,7 @@ classdef tcam < kam
         end
 
         function obj = calculate_load_displacement(obj)
-            obj.load_displacement = obj.displacement;
+            obj.load_displacement.data = obj.displacement;
             % load displacement and follower (roller) displacement of a
             % translating cam are the same
         end
@@ -78,9 +78,9 @@ classdef tcam < kam
             pitch_radius = obj.displacement + obj.rRoller + obj.rBase;
             tanPressureAngle = v_theta./pitch_radius;
 
-            obj.pressureAngle = rad2deg(atan(tanPressureAngle));
+            obj.pressureAngle.data = rad2deg(atan(tanPressureAngle));
 
-            obj.max_pressureAngle = max(obj.pressureAngle);
+            obj.max_pressureAngle = max(obj.pressureAngle.data);
         end
 
 
@@ -130,8 +130,8 @@ classdef tcam < kam
                 angle2x = [0 rotatedAngleEnd(1)];
                 angle2y = [rollerCenterY rotatedAngleEnd(2)];
 
-                temp6 = strcat('曲率半径　',num2str(obj.curvature(i)),' mm     ');
-                temp5 = strcat('圧角　',num2str(obj.pressureAngle(i)),'^o     ');
+                temp6 = strcat('曲率半径　',num2str(obj.curvature.data(i)),' mm     ');
+                temp5 = strcat('圧角　',num2str(obj.pressureAngle.data(i)),'^o     ');
                 temp2 = strcat('変位　',num2str(obj.roller_position(i)-obj.rPrime),' mm     ');
                 temp3 = strcat('回転角度　',num2str(obj.theta(i)),'^o   ');
                 updatedTitle = {temp3; temp2; temp5; temp6};
@@ -188,8 +188,8 @@ classdef tcam < kam
             % initialDisplacement is initial displacement in mm
 
             m = obj.m_load + obj.m_roller;
-            negativeAcceleration = obj.acceleration;
-            negativeAcceleration(obj.acceleration > 0) = 0;
+            negativeAcceleration = obj.acceleration.data;
+            negativeAcceleration(obj.acceleration.data > 0) = 0;
             minimum_spring_force = m*negativeAcceleration - obj.fFriction;
            
 
@@ -209,10 +209,10 @@ classdef tcam < kam
 
         function obj = calculate_motor_torque(obj)
             m = obj.m_load + obj.m_roller;
-            tanPressureAngle = tan(deg2rad(obj.pressureAngle));
-            parallelForce = m*obj.acceleration - obj.fSpring + obj.fCut + obj.fFriction; % in N
+            tanPressureAngle = tan(deg2rad(obj.pressureAngle.data));
+            parallelForce = m*obj.acceleration.data - obj.fSpring + obj.fCut + obj.fFriction; % in N
             perpendicularForce = parallelForce.*tanPressureAngle;
-            obj.motorTorque = obj.roller_position/1000.*perpendicularForce;
+            obj.motorTorque.data = obj.roller_position/1000.*perpendicularForce;
         end
 
 

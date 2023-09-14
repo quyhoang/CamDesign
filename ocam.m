@@ -102,13 +102,13 @@ classdef ocam < kam
 
         function obj = calculate_load_displacement(obj)
             obj = obj.calculate_angular_displacement();
-            obj.load_displacement = obj.l_load * obj.angular_displacement;
+            obj.load_displacement.data = obj.l_load * obj.angular_displacement;
         end
 
         function obj = calculate_angular_acceleration(obj)
             % angular acceleration with respect to time
 
-            obj.angular_acceleration = obj.acceleration /(obj.l_roller/1000);
+            obj.angular_acceleration = obj.acceleration.data /(obj.l_roller/1000);
         end
             
         function obj = calculate_roller_position(obj)
@@ -149,8 +149,8 @@ classdef ocam < kam
                 contactPoint2CamDistance(i) = norm(contactPoint); %distance from cam center to contact point
             end
 
-            obj.pressureAngle = (rockerNormalAngle - normalPhase);
-            obj.max_pressureAngle = max(obj.pressureAngle);
+            obj.pressureAngle.data = (rockerNormalAngle - normalPhase);
+            obj.max_pressureAngle = max(obj.pressureAngle.data);
         end
 
         function obj = animation(obj)
@@ -186,8 +186,8 @@ classdef ocam < kam
                 plot(armCenterX,armCenterY,'o','MarkerFaceColor','r');
                 plot(0,0,'o','MarkerFaceColor','r');
 
-                temp6 = strcat('曲率半径　',num2str(obj.curvature(i)),' mm     ');
-                temp5 = strcat('圧角　',num2str(obj.pressureAngle(i)),'^o     ');
+                temp6 = strcat('曲率半径　',num2str(obj.curvature.data(i)),' mm     ');
+                temp5 = strcat('圧角　',num2str(obj.pressureAngle.data(i)),'^o     ');
 
                 temp3 = strcat('回転角度　',num2str(obj.theta(i)),'^o   ');
                 updatedTitle = {temp3; temp5; temp6};
@@ -291,7 +291,7 @@ classdef ocam < kam
             cutTorque = obj.fCut .* cos(angular_position) * obj.l_load/1000;
             inertialTorque = obj.inertialMoment * obj.angular_acceleration;
             springTorque = obj.fSpring * obj.l_fSpring/1000; % in opposite direction of motor torque
-            obj.motorTorque = inertialTorque + cutTorque - springTorque;
+            obj.motorTorque.data = inertialTorque + cutTorque - springTorque;
         end
 
     end

@@ -36,10 +36,10 @@ classdef kam  < handle
 
         fullStroke = 0
         displacement = 0 % follower (roller) displacement
-        load_displacement = 0 % load displacement
+        load_displacement = camdata('変位','mm') % load displacement
 
-        velocity = 0
-        acceleration = 0
+        velocity = camdata('速度', 'mm/s')
+        acceleration = camdata('加速','m/s2')
 
         roller_position = 0 % center of roller
         pitchCurve = 0
@@ -48,9 +48,9 @@ classdef kam  < handle
         camSurfX = 0 % x coordinate of cam profile
         camSurfY = 0 % y coordinate of cam profile
 
-        curvature = 0 % Radius of curvature
-        pressureAngle = 0
-        motorTorque = 0 
+        curvature = camdata('曲率半径','mm') % Radius of curvature
+        pressureAngle = camdata('圧力角','°')
+        motorTorque = camdata('モータートルク','N/m')
 
         initialSpringDisplacement % initial spring displacement
         minK = 0 % minimum acceptable spring hardness
@@ -192,11 +192,11 @@ classdef kam  < handle
             filtered_pairs = filtered_pairs(1:count, :);
         end
 
-        function pos(obj)
+        function s(obj)
             % Plot position vs angle in cartesian coordinate
 
             figure;
-            plot(obj.theta,obj.load_displacement);
+            plot(obj.theta,obj.load_displacement.data);
             grid on;
             grid minor;
             xlim([0 360]);
@@ -209,47 +209,47 @@ classdef kam  < handle
         end
 
         function obj = calculate_velocity(obj)
-            % velocity with respect to time
+            % velocity.data with respect to time
 
-            obj.velocity = diff(obj.displacement)/obj.timeStep;
-            obj.velocity = [obj.velocity obj.displacement(1)-obj.displacement(length(obj.displacement))];
+            obj.velocity.data = diff(obj.displacement)/obj.timeStep;
+            obj.velocity.data = [obj.velocity.data obj.displacement(1)-obj.displacement(length(obj.displacement))];
             %add the last element to make the length of vv and theta equal
         end
 
-        function velo(obj)
-            % Plot velocity vs angle in cartesian coordinate
+        function v(obj)
+            % Plot velocity.data vs angle in cartesian coordinate
 
             figure;
-            plot(obj.theta,obj.velocity);
+            plot(obj.theta,obj.velocity.data);
             grid on;
             grid minor;
             xlim([0 360]);
             xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
             ylabel({'速度','mm/s'},'FontSize',15,'FontWeight','light','Color','b');
-            tempV = strcat('最大速度 ',num2str(max(obj.velocity)),' mm/s');
+            tempV = strcat('最大速度 ',num2str(max(obj.velocity.data)),' mm/s');
             [tit,] = title({'';'V Diagram';tempV},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
                 'Color','blue');
             tit.FontSize = 15;
         end
 
         function obj = calculate_acceleration(obj)
-            % acceleration with respect to time
+            % acceleration.data with respect to time
 
-            obj.acceleration = diff(obj.velocity)/obj.timeStep;
-            obj.acceleration = [obj.acceleration obj.velocity(1)-obj.velocity(length(obj.velocity))]/1000;
+            obj.acceleration.data = diff(obj.velocity.data)/obj.timeStep;
+            obj.acceleration.data = [obj.acceleration.data obj.velocity.data(1)-obj.velocity.data(length(obj.velocity.data))]/1000;
         end
 
-        function accel(obj)
-            % Plot acceleration vs angle in cartesian coordinate
+        function a(obj)
+            % Plot acceleration.data vs angle in cartesian coordinate
 
             figure;
-            plot(obj.theta,obj.acceleration);
+            plot(obj.theta,obj.acceleration.data);
             grid on;
             grid minor;
             xlim([0 360]);
             xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
             ylabel({'加速','m/s^2'},'FontSize',15,'FontWeight','light','Color','b');
-            tempA = strcat('最大加速  ', num2str(max(obj.acceleration)),' m/s^2');
+            tempA = strcat('最大加速  ', num2str(max(obj.acceleration.data)),' m/s^2');
             [tit,] = title({'';'A Diagram';tempA},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
                 'Color','blue');
             tit.FontSize = 15;
@@ -264,6 +264,7 @@ classdef kam  < handle
 
         function pitch(obj)
             % Show pitch curve
+
             figure;
             plot(obj.pitchX,obj.pitchY,'color',obj.pitchColor)
             axis equal; grid on; grid minor;
@@ -336,28 +337,28 @@ classdef kam  < handle
         end
 
         function obj = calculate_curvature(obj)
-            obj.curvature = zeros(size(obj.camSurfX));
+            obj.curvature.data = zeros(size(obj.camSurfX));
             L = length(obj.camSurfX);
             % Boundary. Note that the first and the last points on profile curve are the
             % same
-            obj.curvature(1) = circumscribedR([obj.camSurfX(L-1) obj.camSurfX(1) obj.camSurfX(2)],[obj.camSurfY(L-1) obj.camSurfY(1) obj.camSurfY(2)]);
-            obj.curvature(L) = circumscribedR([obj.camSurfX(L-1) obj.camSurfX(L) obj.camSurfX(2)],[obj.camSurfY(L-1) obj.camSurfY(L) obj.camSurfY(2)]);
+            obj.curvature.data(1) = circumscribedR([obj.camSurfX(L-1) obj.camSurfX(1) obj.camSurfX(2)],[obj.camSurfY(L-1) obj.camSurfY(1) obj.camSurfY(2)]);
+            obj.curvature.data(L) = circumscribedR([obj.camSurfX(L-1) obj.camSurfX(L) obj.camSurfX(2)],[obj.camSurfY(L-1) obj.camSurfY(L) obj.camSurfY(2)]);
 
             for k = 1:1:L-2
                 X = obj.camSurfX(k:1:k+2);
                 Y = obj.camSurfY(k:1:k+2);
-                obj.curvature(k+1) = circumscribedR(X,Y);
+                obj.curvature.data(k+1) = circumscribedR(X,Y);
             end
 
-            obj.min_curvature = min(obj.curvature);
+            obj.min_curvature = min(obj.curvature.data);
         end
 
-        function curv(obj)
-            % Show radius of curvature
+        function r(obj)
+            % Show radius of curvature.data
 
             figure;
             yyaxis left
-            semilogy(obj.theta, obj.curvature,'Color',obj.angleColor);
+            semilogy(obj.theta, obj.curvature.data,'Color',obj.angleColor);
             ax = gca;
             ax.YColor = obj.angleColor;
             grid on;
@@ -377,17 +378,17 @@ classdef kam  < handle
             ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
             hold on
 
-            tempP = strcat('最小曲率半径 ',num2str(min(obj.curvature)),'mm');
+            tempP = strcat('最小曲率半径 ',num2str(min(obj.curvature.data)),'mm');
             title({'';'曲率半径・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
-            disp(strcat('最小曲率半径: ',num2str(min(obj.curvature)),'mm'));
+            disp(strcat('最小曲率半径: ',num2str(min(obj.curvature.data)),'mm'));
         end
 
-        function pressure_angle(obj)
+        function pressure(obj)
             % Show pressure angle
 
             figure;
             yyaxis left
-            plot(obj.theta, obj.pressureAngle,'Color',obj.angleColor);
+            plot(obj.theta, obj.pressureAngle.data,'Color',obj.angleColor);
             ax = gca;
             ax.YColor = obj.angleColor;
             grid on;
@@ -407,12 +408,12 @@ classdef kam  < handle
             ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color',strokeColor);
             hold on
 
-            tempP = strcat('最大圧角 ',num2str(max(obj.pressureAngle)),'^o');
+            tempP = strcat('最大圧角 ',num2str(max(obj.pressureAngle.data)),'^o');
             %  title(temp,'Color','b','FontSize',15,'FontWeight','light');
 
             title({'';'圧角・位置　vs　回転角度'; tempP; ''},'Color','b','FontSize',15,'FontWeight','light');
 
-            disp(strcat('最大圧角: ',num2str(max(obj.pressureAngle)),'度'));
+            disp(strcat('最大圧角: ',num2str(max(obj.pressureAngle.data)),'度'));
         end
 
         function spring(obj)
@@ -436,11 +437,11 @@ classdef kam  < handle
                 % disp("切断操作なし。");
                 obj.fCut = 0;
             else
-                cutStartAngleIndex = find(obj.load_displacement > obj.cutClearance, 1) - 1;
+                cutStartAngleIndex = find(obj.load_displacement.data > obj.cutClearance, 1) - 1;
                 % find the first index at which displacement bigger than rBase,
                 % which means after cutting process start, minus 1 so that the
                 % index become that of the position just before cutting
-                cutEndAngleIndex = find(obj.load_displacement >= obj.cutClearance + obj.cutThickness,1);
+                cutEndAngleIndex = find(obj.load_displacement.data >= obj.cutClearance + obj.cutThickness,1);
                 % the index at which cutting process ends
                 obj.fCut = zeros(obj.objlength);
                 % Initialize a vector of size equal to that of displacement with all elements set to 0
@@ -449,15 +450,15 @@ classdef kam  < handle
             end
         end
 
-        function mTorque(obj)
+        function torque(obj)
             % Show motor torque
             
             figure;
-            plot(obj.theta,obj.motorTorque);
+            plot(obj.theta,obj.motorTorque.data);
             xlabel('角度') ; 
             xlim([0 360]);
             ylabel('トルク (Nm)') ;
-            torqueTitle = strcat('最大トルク  ', num2str(max(obj.motorTorque)),' Nm');
+            torqueTitle = strcat('最大トルク  ', num2str(max(obj.motorTorque.data)),' Nm');
             title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
             grid on; grid minor;
             disp(torqueTitle);
