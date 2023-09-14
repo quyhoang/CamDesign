@@ -4,19 +4,21 @@ classdef kam  < handle
     % handle class will pass instance to method as reference
 
     properties
+        camType % ocam (oscillating cam) or tcam (translating cam)
+        min_curvature = 0 % Minimum radius of curvature
+        rRoller % Radius of the roller
+        max_pressureAngle = 0 % Maximum pressure angle
+        allowedPressureAngle_deg % Max pressure angle in degree
+        RPM % Motor velocity in rounds per minutes
         transition % Input transition matrix
         transition_angle % Angle values extracted from the transition matrix
         transition_displacement % Displacement values extracted from the transition matrix
 
         m_roller % Roller mass in kilograms
-
         m_load % Load mass in kilograms
 
-        rRoller % Radius of the roller
 
         rPrime = 0 % Prime radius (roller radius plus base radius)
-        RPM % Motor velocity in rounds per minutes
-        kFriction % Friction coefficient
 
         rollerColor % Color to use for the roller in graphics
         pitchColor % Color to use for the pitch in graphics
@@ -24,7 +26,7 @@ classdef kam  < handle
         angleColor % to use in graphics
 
         allowedPressureAngle % Max pressure angle in radian
-        allowedPressureAngle_deg % Max pressure angle in degree
+
         theta % Range of angles from 0 to 360 with step size as defined by 'step'
         T % Period of moving 360 degrees, in seconds
         time % Array of time values corresponding to each angle in 'theta'
@@ -33,7 +35,9 @@ classdef kam  < handle
         step % step size of theta
 
         fullStroke = 0
-        displacement = 0
+        displacement = 0 % follower (roller) displacement
+        load_displacement = 0 % load displacement
+
         velocity = 0
         acceleration = 0
 
@@ -45,10 +49,22 @@ classdef kam  < handle
         camSurfY = 0 % y coordinate of cam profile
 
         curvature = 0 % Radius of curvature
-        min_curvature = 0 % Minimum allowable radius of curvature
-
         pressureAngle = 0
-        max_pressureAngle = 0 % Maximum allowable pressure angle
+        motorTorque = 0 
+
+        initialSpringDisplacement % initial spring displacement
+        minK = 0 % minimum acceptable spring hardness
+        springK % actual spring hardness
+
+        fSpring = 0 % Force exerted by spring. Positive direction is from cam center outward
+        objlength = 0 % number of sampled points over 360 deg period
+
+        fCutMax = 0 % Maximum cutting force (N)
+        cutThickness = 0 %mm
+        cutClearance = 0 %mm
+        backClampForce = 0 %N
+        fCut = 0 % Force needed to cut a workpiece
+
     end
 
 
@@ -72,16 +88,19 @@ classdef kam  < handle
 
             obj.allowedPressureAngle = deg2rad(obj.allowedPressureAngle_deg);
             obj.theta = 0:obj.step:360;
+            obj.objlength = size(obj.theta);
             obj.T = 60/obj.RPM;
             obj.time = linspace(0, obj.T, length(obj.theta));
             obj.timeStep = obj.T / size(obj.time, 2);
-            if isprop(obj,'rBase') % Calculate rPrime is the child class has rBase attribute
+
+            if strcmpi(obj.camType, 'tcam') % Calculate rPrime is the child class has rBase attribute
                 obj.rPrime = obj.rBase + obj.rRoller;
             end
 
             % Calculating cam dynamic properties
-            obj = obj.calculate_displacement();
-            obj = obj.calculate_velocity();
+            obj = obj.calculate_displacement(); % Follower displacement
+            obj = obj.calculate_load_displacement(); % Load displacement
+            obj = obj.calculate_velocity(); 
             obj = obj.calculate_acceleration();
 
             obj = obj.calculate_roller_position();
@@ -90,6 +109,7 @@ classdef kam  < handle
             obj = obj.calculate_curvature();
             obj = obj.calculate_roller_position();
             obj = obj.calculate_pressure_angle();
+
 
             % Validate that all properties have been assigned values
             propertyList = properties(obj);
@@ -172,50 +192,11 @@ classdef kam  < handle
             filtered_pairs = filtered_pairs(1:count, :);
         end
 
-        function obj = calculate_displacement(obj)
-            % Calculating displacement
-            obj.displacement = zeros(size(obj.theta));
-
-            % Get the transition points
-            filtered_pairs = obj.filterConsecutivePairs();
-
-            % Iterate over the transition points
-            for i = 1:size(filtered_pairs, 1)
-                % Extract the start and end points of the transition
-                point = filtered_pairs(i, :);
-                h = obj.transition_displacement(obj.transition_angle == point(2)) - obj.transition_displacement(obj.transition_angle == point(1));
-
-                if (abs(h) > obj.fullStroke)
-                    obj.fullStroke = abs(h);
-                end
-
-                bRise = point(2) - point(1);
-
-                % Calculate the three sections of the displacement curve
-                tempTheta1 = obj.theta(obj.theta >= point(1) & obj.theta < point(1) + bRise/8) - point(1);
-                sRise1 = h/(4+pi)*(pi*tempTheta1/bRise - 1/4*sin(4*pi*tempTheta1/bRise));
-
-                tempTheta2 = obj.theta(obj.theta >= point(1) + bRise/8 & obj.theta < point(1) + 7*bRise/8) - point(1);
-                sRise2 = h/(4+pi)*(2 + pi*tempTheta2/bRise - 9/4*sin(pi/3 + 4*pi/3*tempTheta2/bRise));
-
-                tempTheta3 = obj.theta(obj.theta >= point(1) + 7*bRise/8 & obj.theta <= point(2)) - point(1);
-                sRise3 = h/(4+pi)*(4 + pi*tempTheta3/bRise - 1/4*sin(4*pi*tempTheta3/bRise));
-
-                % Combine all parts and add the previous displacement value
-                sRise = [sRise1, sRise2, sRise3];
-
-                % Update the displacement array
-                obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
-                obj.displacement(obj.theta > point(2)) = obj.displacement(obj.theta > point(2)) + sRise(end);
-                % Update the cumulative displacement for the next period
-            end
-        end
-
         function pos(obj)
             % Plot position vs angle in cartesian coordinate
 
             figure;
-            plot(obj.theta,obj.displacement);
+            plot(obj.theta,obj.load_displacement);
             grid on;
             grid minor;
             xlim([0 360]);
@@ -433,20 +414,75 @@ classdef kam  < handle
 
             disp(strcat('最大圧角: ',num2str(max(obj.pressureAngle)),'度'));
         end
+
+        function spring(obj)
+            % Plot spring force vs angle in cartesian coordinate
+
+            figure;
+            plot(obj.theta,obj.fSpring);
+            grid on;
+            grid minor;
+            xlim([0 360]);
+            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
+            ylabel({'バネ力','N'},'FontSize',15,'FontWeight','light','Color','b');
+            tempA = strcat('最大力  ', num2str(min(obj.fSpring)),' N');
+            [tit,] = title({'';'バネ力 vs 回転角度';tempA},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
+                'Color','blue');
+            tit.FontSize = 15;
+        end
+
+        function obj = calculate_cutting_force(obj)
+            if isempty(obj.fCutMax) || (obj.fCutMax <= 0)
+                % disp("切断操作なし。");
+                obj.fCut = 0;
+            else
+                cutStartAngleIndex = find(obj.load_displacement > obj.cutClearance, 1) - 1;
+                % find the first index at which displacement bigger than rBase,
+                % which means after cutting process start, minus 1 so that the
+                % index become that of the position just before cutting
+                cutEndAngleIndex = find(obj.load_displacement >= obj.cutClearance + obj.cutThickness,1);
+                % the index at which cutting process ends
+                obj.fCut = zeros(obj.objlength);
+                % Initialize a vector of size equal to that of displacement with all elements set to 0
+                obj.fCut(cutStartAngleIndex:cutEndAngleIndex) = obj.fCutMax + obj.backClampForce;
+                % Set the elements corresponding to position during cutting to max cutting force
+            end
+        end
+
+        function mTorque(obj)
+            % Show motor torque
+            
+            figure;
+            plot(obj.theta,obj.motorTorque);
+            xlabel('角度') ; 
+            xlim([0 360]);
+            ylabel('トルク (Nm)') ;
+            torqueTitle = strcat('最大トルク  ', num2str(max(obj.motorTorque)),' Nm');
+            title(torqueTitle,'Color','b','FontSize',15,'FontWeight','light');
+            grid on; grid minor;
+            disp(torqueTitle);
+        end
     end
 
+    methods (Abstract) % Abstract method, to be defined by each child class
+        calculate_displacement(obj) % roller displacement, not load
+        % load displacement is described by transition matrix
 
-    methods (Abstract)
-        calculate_roller_position(obj) % Abstract method, to be defined by each child class
+        calculate_load_displacement(obj)
+
+        calculate_roller_position(obj)
+
+        calculate_pressure_angle(obj)
+
+        animation(obj)
+
+        calculate_spring_force(obj)
+        % Calculate the minimum force the spring must exert to keep the
+        % cam and the follower always in contact
+   
+        calculate_motor_torque(obj)
     end
 
-    methods (Abstract)
-        calculate_pressure_angle(obj) % Abstract method, to be defined by each child class
-    end
-
-    methods (Abstract)
-        animation(obj) % Abstract method, to be defined by each child class
-    end
 end
 
 

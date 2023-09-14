@@ -10,28 +10,112 @@ classdef ocam < kam
 
         initial_angular_displacement
         angular_displacement = 0;
+        angular_acceleration = 0;
 
         s2rad = 0;
-        roller_position_origin = 0 %unregulated position, rocker is at center
+        roller_position_origin = 0 
+
+        l_fSpring % distance from spring applied force to rocker rotation center
+
+        initial_rocker_angle % initial angle from rocker arm to the line perpendicular to action line
+        % counter clockwise is positive. This initial angle is from -180 to
+        % 180 degree. Note that the cam also rotate counterclockwise.
+
+        inertialMoment = 0
+        frictionTorque = 0
+
     end
 
     methods
         function obj = ocam(instanceName)
             % Constructor
+
             obj = obj@kam(instanceName)
-
-
+            obj.initial_rocker_angle = deg2rad(obj.initial_rocker_angle);
+            obj = obj.calculate_angular_acceleration();
+            obj = obj.calculate_spring_force();
+            obj = obj.calculate_cutting_force();
+            obj = obj.calculate_motor_torque();
         end
 
+        function obj = regulate_transition_displacement(obj)
+            % convert from displacement of load to arc displacement of follower
+
+            initial_roller_arc_displacement = obj.l_roller * obj.initial_rocker_angle;
+            % distance from initial position to projection of rocker
+            % rotation center to action line
+            initial_load_position = obj.l_load * sin(obj.initial_rocker_angle);
+            respective_rocker_angle = asin((obj.transition_displacement+initial_load_position)/obj.l_load);
+            % note that radius of roller at load side does not affect this
+
+            obj.transition_displacement = obj.l_roller * respective_rocker_angle - initial_roller_arc_displacement;
+        end
+        
+        function obj = calculate_displacement(obj)
+            % Follower arc displacement
+
+            obj = obj.regulate_transition_displacement();
+
+            % Calculating displacement of oscillating cam
+            obj.displacement = zeros(obj.objlength);
+
+            % Get the transition points
+            filtered_pairs = obj.filterConsecutivePairs();
+
+            % Iterate over the transition points
+            for i = 1:size(filtered_pairs, 1)
+                % Extract the start and end points of the transition
+                point = filtered_pairs(i, :);
+                h = obj.transition_displacement(obj.transition_angle == point(2)) - obj.transition_displacement(obj.transition_angle == point(1));
+
+                if (abs(h) > obj.fullStroke)
+                    obj.fullStroke = abs(h);
+                end
+
+                bRise = point(2) - point(1);
+
+                % Calculate the three sections of the displacement curve
+                tempTheta1 = obj.theta(obj.theta >= point(1) & obj.theta < point(1) + bRise/8) - point(1);
+                sRise1 = h/(4+pi)*(pi*tempTheta1/bRise - 1/4*sin(4*pi*tempTheta1/bRise));
+
+                tempTheta2 = obj.theta(obj.theta >= point(1) + bRise/8 & obj.theta < point(1) + 7*bRise/8) - point(1);
+                sRise2 = h/(4+pi)*(2 + pi*tempTheta2/bRise - 9/4*sin(pi/3 + 4*pi/3*tempTheta2/bRise));
+
+                tempTheta3 = obj.theta(obj.theta >= point(1) + 7*bRise/8 & obj.theta <= point(2)) - point(1);
+                sRise3 = h/(4+pi)*(4 + pi*tempTheta3/bRise - 1/4*sin(4*pi*tempTheta3/bRise));
+
+                % Combine all parts and add the previous displacement value
+                sRise = [sRise1, sRise2, sRise3];
+
+                % Update the displacement array
+                obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
+                obj.displacement(obj.theta > point(2)) = obj.displacement(obj.theta > point(2)) + sRise(end);
+                % Update the cumulative displacement for the next period
+            end
+            % obj.angular_displacement = obj.displacement/obj.l_roller;
+            % obj.load_displacement = obj.l_load * obj.angular_displacement;
+        end        
+
+        function obj = calculate_angular_displacement(obj)
+            obj.angular_displacement = obj.displacement/obj.l_roller; %in radian
+        end
+
+        function obj = calculate_load_displacement(obj)
+            obj = obj.calculate_angular_displacement();
+            obj.load_displacement = obj.l_load * obj.angular_displacement;
+        end
+
+        function obj = calculate_angular_acceleration(obj)
+            % angular acceleration with respect to time
+
+            obj.angular_acceleration = obj.acceleration /(obj.l_roller/1000);
+        end
+            
         function obj = calculate_roller_position(obj)
-            %
+            % Roller position in Cartesian coordinate
 
-            obj.s2rad = obj.displacement/obj.l_load; % convert arc length to angular displacement
-            s_rad_initial = deg2rad(obj.initial_angular_displacement);
-            obj.s2rad = obj.s2rad + s_rad_initial; % angular displacement
-
-            obj.roller_position_origin = obj.l_roller*exp(obj.s2rad*1i);  %unregulated position, rocker is at center
-            obj.roller_position = obj.roller_position_origin - obj.rocker2cam; % cam is at center, rocker axis is at (-rocker2cam,0)
+            obj.s2rad = obj.displacement/obj.l_roller + deg2rad(obj.initial_angular_displacement); % angular displacement
+            obj.roller_position = obj.l_roller*exp(obj.s2rad*1i) - obj.rocker2cam; % cam is at center, rocker axis is at (-rocker2cam,0)
         end
 
         function obj = calculate_pressure_angle(obj)
@@ -167,5 +251,48 @@ classdef ocam < kam
             plot(contactPointX, contactPointY,'.','color','r'); hold on;
 
         end
+
+        function obj = calculate_spring_force(obj)
+            % Find the momentum needed for follower to always remains in
+            % contact with cam.
+            % k is spring constant in N/mm
+            % initialDisplacement is initial displacement in mm
+
+            I_roller = obj.m_roller*(obj.l_roller/1000)^2;
+            I_rocker = 1/3*obj.m_rocker*(obj.l_load/1000)^2;
+            I_load = obj.m_load*(obj.l_load/1000)^2;
+            obj.inertialMoment = I_roller+I_rocker+I_load;
+            
+            negativeAcceleration = obj.angular_acceleration;
+            negativeAcceleration(obj.angular_acceleration > 0) = 0;
+            minimum_spring_torque = obj.inertialMoment*negativeAcceleration - obj.frictionTorque;
+            
+            % approximation, assume that spring force is almost always
+            % perpendicular to rocker
+            minimum_spring_force = minimum_spring_torque/(obj.l_fSpring/1000);
+            % figure; plot(minimum_spring_force)
+
+            springDisplacement = obj.initialSpringDisplacement + obj.angular_displacement*obj.l_fSpring;
+            % Check if all elements are positive using assert
+            assert(all(springDisplacement > 0), 'The spring must always be compressed. Please change increase initial spring displacement.');
+
+            % Find the smallest value of k so that fSpring is always
+            % more negative than minimum_spring_force
+            obj.minK = max(-1 * minimum_spring_force ./ springDisplacement);
+            if (obj.springK < obj.minK)
+                obj.springK = obj.minK;
+                disp(['Spring Hook modulus is reset to minimum allowable value: ', num2str(obj.minK)]);
+            end
+            obj.fSpring = -1 * obj.springK * springDisplacement;
+        end
+
+        function obj = calculate_motor_torque(obj)
+            angular_position = deg2rad(obj.initial_rocker_angle) + obj.angular_displacement;
+            cutTorque = obj.fCut .* cos(angular_position) * obj.l_load/1000;
+            inertialTorque = obj.inertialMoment * obj.angular_acceleration;
+            springTorque = obj.fSpring * obj.l_fSpring/1000; % in opposite direction of motor torque
+            obj.motorTorque = inertialTorque + cutTorque - springTorque;
+        end
+
     end
 end

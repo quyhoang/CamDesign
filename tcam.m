@@ -3,6 +3,7 @@ classdef tcam < kam
 
     properties
         rBase % Base radius
+        fFriction % Maximum static friction force
     end
 
     methods
@@ -10,6 +11,54 @@ classdef tcam < kam
             % Constructor
 
             obj = obj@kam(instanceName)
+            obj = obj.calculate_spring_force();
+            obj = obj.calculate_cutting_force();
+            obj = obj.calculate_motor_torque();
+        end
+
+        function obj = calculate_displacement(obj)
+            % Calculating displacement
+            obj.displacement = zeros(obj.objlength);
+
+            % Get the transition points
+            filtered_pairs = obj.filterConsecutivePairs();
+
+            % Iterate over the transition points
+            for i = 1:size(filtered_pairs, 1)
+                % Extract the start and end points of the transition
+                point = filtered_pairs(i, :);
+                h = obj.transition_displacement(obj.transition_angle == point(2)) - obj.transition_displacement(obj.transition_angle == point(1));
+
+                if (abs(h) > obj.fullStroke)
+                    obj.fullStroke = abs(h);
+                end
+
+                bRise = point(2) - point(1);
+
+                % Calculate the three sections of the displacement curve
+                tempTheta1 = obj.theta(obj.theta >= point(1) & obj.theta < point(1) + bRise/8) - point(1);
+                sRise1 = h/(4+pi)*(pi*tempTheta1/bRise - 1/4*sin(4*pi*tempTheta1/bRise));
+
+                tempTheta2 = obj.theta(obj.theta >= point(1) + bRise/8 & obj.theta < point(1) + 7*bRise/8) - point(1);
+                sRise2 = h/(4+pi)*(2 + pi*tempTheta2/bRise - 9/4*sin(pi/3 + 4*pi/3*tempTheta2/bRise));
+
+                tempTheta3 = obj.theta(obj.theta >= point(1) + 7*bRise/8 & obj.theta <= point(2)) - point(1);
+                sRise3 = h/(4+pi)*(4 + pi*tempTheta3/bRise - 1/4*sin(4*pi*tempTheta3/bRise));
+
+                % Combine all parts and add the previous displacement value
+                sRise = [sRise1, sRise2, sRise3];
+
+                % Update the displacement array
+                obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
+                obj.displacement(obj.theta > point(2)) = obj.displacement(obj.theta > point(2)) + sRise(end);
+                % Update the cumulative displacement for the next period
+            end
+        end
+
+        function obj = calculate_load_displacement(obj)
+            obj.load_displacement = obj.displacement;
+            % load displacement and follower (roller) displacement of a
+            % translating cam are the same
         end
 
         function obj = calculate_roller_position(obj)
@@ -42,7 +91,6 @@ classdef tcam < kam
             [angleEndPointX,angleEndPointY] = offsetIn(obj.pitchX,obj.pitchY,-angleLineFactor*obj.rRoller);
             theta2 = deg2rad(obj.theta);
             h = obj.fullStroke;
-            position = obj.displacement + obj.rBase + obj.rRoller;
             plot(0,0,'o','MarkerFaceColor','r');
             % Pitch Circle
             rotatedPitch = rotateCw([obj.pitchX;obj.pitchY],-pi/2);
@@ -73,9 +121,9 @@ classdef tcam < kam
                 rotatedCam = rotateCw([obj.camSurfX;obj.camSurfY],j);
 
                 % Pressure angle
-                yC = obj.rRoller*sin(index) + position(i);
-                rollerCenterY = position(i);
-                rollerCenterY_angle = position(i)+angleLineFactor*obj.rRoller;
+                yC = obj.rRoller*sin(index) + obj.roller_position(i);
+                rollerCenterY = obj.roller_position(i);
+                rollerCenterY_angle = obj.roller_position(i)+angleLineFactor*obj.rRoller;
                 angle1y = [rollerCenterY rollerCenterY_angle];
 
                 rotatedAngleEnd = rotateCw([angleEndPointX(i);angleEndPointY(i)],j);
@@ -84,12 +132,12 @@ classdef tcam < kam
 
                 temp6 = strcat('曲率半径　',num2str(obj.curvature(i)),' mm     ');
                 temp5 = strcat('圧角　',num2str(obj.pressureAngle(i)),'^o     ');
-                temp2 = strcat('変位　',num2str(position(i)-obj.rPrime),' mm     ');
+                temp2 = strcat('変位　',num2str(obj.roller_position(i)-obj.rPrime),' mm     ');
                 temp3 = strcat('回転角度　',num2str(obj.theta(i)),'^o   ');
                 updatedTitle = {temp3; temp2; temp5; temp6};
                 title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
 
-                temp4 = strcat('位置　',num2str(position(i)),' mm     ');
+                temp4 = strcat('位置　',num2str(obj.roller_position(i)),' mm     ');
                 ylabel(temp4,'Color',obj.angleColor,'FontSize',15);
                 temp1 = strcat('経過時間　',num2str(obj.time(i)),' s     ');
                 xlabel(temp1,'Color',obj.angleColor,'FontSize',15);
@@ -132,5 +180,41 @@ classdef tcam < kam
             hold on
             plot(angle2x,angle2y,'MarkerFaceColor',[0 0.4470 0.7410]);
         end
+
+        function obj = calculate_spring_force(obj)
+            % Find the force need for follower to always remains in
+            % contact with cam.
+            % k is spring constant in N/mm
+            % initialDisplacement is initial displacement in mm
+
+            m = obj.m_load + obj.m_roller;
+            negativeAcceleration = obj.acceleration;
+            negativeAcceleration(obj.acceleration > 0) = 0;
+            minimum_spring_force = m*negativeAcceleration - obj.fFriction;
+           
+
+            springDisplacement = obj.initialSpringDisplacement + obj.displacement;
+            % Check if all elements are positive using assert
+            assert(all(springDisplacement > 0), 'The spring must always be compressed. Please change increase initial spring displacement.');
+
+            % Find the smallest value of k so that fSpring is always
+            % more negative than minimum_spring_force
+            obj.minK = max(-1 * minimum_spring_force ./ springDisplacement);
+            if (obj.springK < obj.minK)
+                obj.springK = obj.minK;
+                disp(['Spring Hook modulus is reset to minimum allowable value: ', num2str(obj.minK)]);
+            end
+            obj.fSpring = -1 * obj.springK * springDisplacement;
+        end
+
+        function obj = calculate_motor_torque(obj)
+            m = obj.m_load + obj.m_roller;
+            tanPressureAngle = tan(deg2rad(obj.pressureAngle));
+            parallelForce = m*obj.acceleration - obj.fSpring + obj.fCut + obj.fFriction; % in N
+            perpendicularForce = parallelForce.*tanPressureAngle;
+            obj.motorTorque = obj.roller_position/1000.*perpendicularForce;
+        end
+
+
     end
 end
