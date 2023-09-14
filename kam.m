@@ -35,8 +35,8 @@ classdef kam  < handle
         step % step size of theta
 
         fullStroke = 0
-        displacement = 0 % follower (roller) displacement
-        load_displacement = camdata('変位','mm') % load displacement
+        displacement = camdata('ローラー変位','mm') % follower (roller) displacement
+        load_displacement = camdata('部品変位','mm') % load displacement
 
         velocity = camdata('速度', 'mm/s')
         acceleration = camdata('加速','m/s2')
@@ -211,8 +211,8 @@ classdef kam  < handle
         function obj = calculate_velocity(obj)
             % velocity.data with respect to time
 
-            obj.velocity.data = diff(obj.displacement)/obj.timeStep;
-            obj.velocity.data = [obj.velocity.data obj.displacement(1)-obj.displacement(length(obj.displacement))];
+            obj.velocity.data = diff(obj.displacement.data)/obj.timeStep;
+            obj.velocity.data = [obj.velocity.data obj.displacement.data(1)-obj.displacement.data(length(obj.displacement.data))];
             %add the last element to make the length of vv and theta equal
         end
 
@@ -369,7 +369,7 @@ classdef kam  < handle
 
             yyaxis right
             strokeColor = [0.6350 0.0780 0.1840];
-            plot(obj.theta,obj.displacement,'Color',strokeColor);
+            plot(obj.theta,obj.displacement.data,'Color',strokeColor);
             ax = gca;
             ax.YColor = strokeColor;
             grid on;
@@ -399,7 +399,7 @@ classdef kam  < handle
 
             yyaxis right
             strokeColor = [0.6350 0.0780 0.1840];
-            plot(obj.theta,obj.displacement,'Color',strokeColor);
+            plot(obj.theta,obj.displacement.data,'Color',strokeColor);
             ax = gca;
             ax.YColor = strokeColor;
             grid on;

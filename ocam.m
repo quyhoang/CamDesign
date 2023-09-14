@@ -57,7 +57,7 @@ classdef ocam < kam
             obj = obj.regulate_transition_displacement();
 
             % Calculating displacement of oscillating cam
-            obj.displacement = zeros(obj.objlength);
+            obj.displacement.data = zeros(obj.objlength);
 
             % Get the transition points
             filtered_pairs = obj.filterConsecutivePairs();
@@ -88,16 +88,16 @@ classdef ocam < kam
                 sRise = [sRise1, sRise2, sRise3];
 
                 % Update the displacement array
-                obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
-                obj.displacement(obj.theta > point(2)) = obj.displacement(obj.theta > point(2)) + sRise(end);
+                obj.displacement.data(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement.data(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
+                obj.displacement.data(obj.theta > point(2)) = obj.displacement.data(obj.theta > point(2)) + sRise(end);
                 % Update the cumulative displacement for the next period
             end
-            % obj.angular_displacement = obj.displacement/obj.l_roller;
+            % obj.angular_displacement = obj.displacement.data/obj.l_roller;
             % obj.load_displacement = obj.l_load * obj.angular_displacement;
         end        
 
         function obj = calculate_angular_displacement(obj)
-            obj.angular_displacement = obj.displacement/obj.l_roller; %in radian
+            obj.angular_displacement = obj.displacement.data/obj.l_roller; %in radian
         end
 
         function obj = calculate_load_displacement(obj)
@@ -114,7 +114,7 @@ classdef ocam < kam
         function obj = calculate_roller_position(obj)
             % Roller position in Cartesian coordinate
 
-            obj.s2rad = obj.displacement/obj.l_roller + deg2rad(obj.initial_angular_displacement); % angular displacement
+            obj.s2rad = obj.displacement.data/obj.l_roller + deg2rad(obj.initial_angular_displacement); % angular displacement
             obj.roller_position = obj.l_roller*exp(obj.s2rad*1i) - obj.rocker2cam; % cam is at center, rocker axis is at (-rocker2cam,0)
         end
 
@@ -193,7 +193,7 @@ classdef ocam < kam
                 updatedTitle = {temp3; temp5; temp6};
                 title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
 
-                temp4 = strcat('変位　',num2str(obj.displacement(i)),' mm     ');
+                temp4 = strcat('変位　',num2str(obj.displacement.data(i)),' mm     ');
                 ylabel(temp4,'Color',obj.angleColor,'FontSize',15);
                 temp1 = strcat('経過時間　',num2str(obj.time(i)),' s     ');
                 xlabel(temp1,'Color',obj.angleColor,'FontSize',15);

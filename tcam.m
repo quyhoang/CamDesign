@@ -18,7 +18,7 @@ classdef tcam < kam
 
         function obj = calculate_displacement(obj)
             % Calculating displacement
-            obj.displacement = zeros(obj.objlength);
+            obj.displacement.data = zeros(obj.objlength);
 
             % Get the transition points
             filtered_pairs = obj.filterConsecutivePairs();
@@ -49,14 +49,14 @@ classdef tcam < kam
                 sRise = [sRise1, sRise2, sRise3];
 
                 % Update the displacement array
-                obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
-                obj.displacement(obj.theta > point(2)) = obj.displacement(obj.theta > point(2)) + sRise(end);
+                obj.displacement.data(obj.theta >= point(1) & obj.theta <= point(2)) = obj.displacement.data(obj.theta >= point(1) & obj.theta <= point(2)) + sRise;
+                obj.displacement.data(obj.theta > point(2)) = obj.displacement.data(obj.theta > point(2)) + sRise(end);
                 % Update the cumulative displacement for the next period
             end
         end
 
         function obj = calculate_load_displacement(obj)
-            obj.load_displacement.data = obj.displacement;
+            obj.load_displacement.data = obj.displacement.data;
             % load displacement and follower (roller) displacement of a
             % translating cam are the same
         end
@@ -64,7 +64,7 @@ classdef tcam < kam
         function obj = calculate_roller_position(obj)
             %
 
-            obj.roller_position = obj.displacement + obj.rPrime; % cam is at center
+            obj.roller_position = obj.displacement.data + obj.rPrime; % cam is at center
         end
 
         function obj = calculate_pressure_angle(obj)
@@ -72,10 +72,10 @@ classdef tcam < kam
             % tan a = {ds/d(theta)}/(s + rb + rr) %theta in degree
 
             radianStep = deg2rad(obj.step);
-            d_s = [diff(obj.displacement) obj.displacement(1)-obj.displacement(length(obj.displacement))];
+            d_s = [diff(obj.displacement.data) obj.displacement.data(1)-obj.displacement.data(length(obj.displacement.data))];
             v_theta = d_s/radianStep; % differentiate s with respect to theta in radian
 
-            pitch_radius = obj.displacement + obj.rRoller + obj.rBase;
+            pitch_radius = obj.displacement.data + obj.rRoller + obj.rBase;
             tanPressureAngle = v_theta./pitch_radius;
 
             obj.pressureAngle.data = rad2deg(atan(tanPressureAngle));
@@ -193,7 +193,7 @@ classdef tcam < kam
             minimum_spring_force = m*negativeAcceleration - obj.fFriction;
            
 
-            springDisplacement = obj.initialSpringDisplacement + obj.displacement;
+            springDisplacement = obj.initialSpringDisplacement + obj.displacement.data;
             % Check if all elements are positive using assert
             assert(all(springDisplacement > 0), 'The spring must always be compressed. Please change increase initial spring displacement.');
 
