@@ -126,6 +126,7 @@ classdef ocam < kam
             rollerCenterX = real(obj.roller_position);
             rollerCenterY = imag(obj.roller_position);
 
+            obj.roller_position_origin = obj.l_roller*exp(obj.s2rad*1i);  %unregulated position, rocker center is at (0,0)
             rockerNormalAngle = rad2deg(angle(obj.roller_position_origin))+90;
 
             normalPhase = zeros(size(obj.theta));
@@ -156,6 +157,11 @@ classdef ocam < kam
         function obj = animation(obj)
             %
 
+            % angleLineFactor = 4;
+            % rollerCenterX = real(obj.roller_position);
+            % rollerCenterY = imag(obj.roller_position);
+            % [angleEndPointX,angleEndPointY] = offsetIn(obj.pitchX,obj.pitchY,-angleLineFactor*obj.rRoller);
+
             % Draw rocker arm
             armCenterX = -obj.rocker2cam;
             armCenterY = 0;
@@ -173,6 +179,15 @@ classdef ocam < kam
 
             rollerCenterX = real(obj.roller_position);
             rollerCenterY = imag(obj.roller_position);
+
+            pressureLineLength = 4*obj.rRoller;
+            pressureLine1Angle = angle(obj.roller_position_origin)+pi/2;
+            pressureLine1Endpoint = pressureLineLength*exp(pressureLine1Angle*1i);
+
+            pressureLine1EndpointX = real(pressureLine1Endpoint) + rollerCenterX;
+            pressureLine1EndpointY = imag(pressureLine1Endpoint) + rollerCenterY;
+
+            [angleEndPointX,angleEndPointY] = offsetIn(obj.pitchX,obj.pitchY,-pressureLineLength);
 
             for i = 1:length(obj.theta)
                 j = thetaRadian(i);
@@ -193,15 +208,28 @@ classdef ocam < kam
                 updatedTitle = {temp3; temp5; temp6};
                 title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
 
-                temp4 = strcat('変位　',num2str(obj.displacement.data(i)),' mm     ');
-                ylabel(temp4,'Color',obj.angleColor,'FontSize',15);
+                temp4a = strcat('ローラー変位　',num2str(obj.displacement.data(i)),' mm     ');
+                temp4b = strcat('部品変位　',num2str(obj.load_displacement.data(i)),' mm     ');
+                ylabel({temp4a,temp4b},'Color',obj.angleColor,'FontSize',15);
                 temp1 = strcat('経過時間　',num2str(obj.time(i)),' s     ');
                 xlabel(temp1,'Color',obj.angleColor,'FontSize',15);
+
+                % Pressure angle
+                pressureLine1X = [rollerCenterX(i) pressureLine1EndpointX(i)];
+                pressureLine1Y = [rollerCenterY(i) pressureLine1EndpointY(i)];
+                plot(pressureLine1X,pressureLine1Y,'MarkerFaceColor',[0 0.4470 0.7410]); hold on
+                rotatedAngleEnd = rotateCw([angleEndPointX(i);angleEndPointY(i)],j);
+                angle2x = [rollerCenterX(i) rotatedAngleEnd(1)];
+                angle2y = [rollerCenterY(i) rotatedAngleEnd(2)];
+                plot(angle2x,angle2y,'Color',obj.camColor); hold on;
 
                 % Update rocker arm
                 armX = [armCenterX,rollerCenterX(i)];
                 armY = [armCenterY,rollerCenterY(i)];
-                plot(armX,armY); hold on
+                plot(armX,armY,'MarkerFaceColor',[0 0.4470 0.7410]); hold on
+
+                % Update rocker arm perpendicular line (visualize pressure angle)
+                
 
                 % Update roller position
                 xC = obj.rRoller*cos(index) + rollerCenterX(i);
@@ -243,13 +271,17 @@ classdef ocam < kam
 
             plot(armCenterX,armCenterY,'o','MarkerFaceColor','r');
             plot(0,0,'o','MarkerFaceColor','r'); hold on
-            plot(armX,armY); hold on
-            plot(xC,yC,'color',obj.rollerColor); hold on
-            plot(tempRollerCenterX,tempRollerCenterY,'o','MarkerFaceColor',[0 0.4470 0.7410]); hold on
-            plot(xx,yy,'color',obj.pitchColor);hold on;
-            plot(xx2,yy2,'color',obj.camColor); hold on;
-            plot(contactPointX, contactPointY,'.','color','r'); hold on;
-
+            plot(armX,armY); 
+            plot(xC,yC,'color',obj.rollerColor); 
+            plot(tempRollerCenterX,tempRollerCenterY,'o','MarkerFaceColor',[0 0.4470 0.7410]); 
+            plot(xx,yy,'color',obj.pitchColor);
+            plot(xx2,yy2,'color',obj.camColor); 
+            plot(contactPointX, contactPointY,'.','color','r'); 
+            plot(pressureLine1X,pressureLine1Y); 
+            plot(angle2x,angle2y,'MarkerFaceColor',[0 0.4470 0.7410]);
+            title(updatedTitle,'Color',[0 0.4470 0.7410],'FontSize',14);
+            ylabel({temp4a,temp4b},'Color',obj.angleColor,'FontSize',15);
+            xlabel(temp1,'Color',obj.angleColor,'FontSize',15);
         end
 
         function obj = calculate_spring_force(obj)

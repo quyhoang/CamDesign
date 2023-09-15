@@ -45,8 +45,7 @@ classdef camdata
             columnHeaders = {'回転角度', obj.name};
             T = array2table(exportdata, 'VariableNames', columnHeaders);
             filename = [filename, '.xlsx'];
-             writetable(T, filename)
-%             writetable(T, filename, 'Encoding', 'UTF-8');
+            writetable(T, filename);
             disp(['Data has been written to ', filename]);
         end
     end

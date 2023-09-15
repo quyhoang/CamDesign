@@ -1,5 +1,5 @@
 classdef kam  < handle
-    %Kam is a general class representing cam mechanism
+    % Kam is a general class representing cam mechanism
     % there are children classes of specific cam type
     % handle class will pass instance to method as reference
 
@@ -122,6 +122,18 @@ classdef kam  < handle
             % Check that conditions for the CAM are met
             assert(obj.max_pressureAngle < obj.allowedPressureAngle_deg, 'Max pressure angle is too large.');
             assert(obj.min_curvature > obj.rRoller, 'Minimum radius of curvature is too small.');
+            obj.camCheck();
+        end
+
+        function camCheck(obj)
+            checklist = {obj.velocity, obj.acceleration, obj.pressureAngle, obj.motorTorque};
+            disp(' ');
+            for i = 1:numel(checklist)
+                showMax(checklist{i});
+            end
+            disp(['最小曲率半径',': ', num2str(min(obj.curvature.data)),' ', obj.curvature.unit]);
+            disp(['最小許容バネ定数',': ', num2str(obj.minK),' N/mm']);
+            disp(' ');
         end
 
         function obj = readParameters(obj, parameterFilePath)
@@ -485,7 +497,6 @@ classdef kam  < handle
     end
 
 end
-
 
 
 
