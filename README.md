@@ -191,16 +191,21 @@ Example:
 
 | Methods  | Explanation  | 
 | :------------: |:---------------:| 
+| combinetorque | Calculate total torque required by multiple cams over the period of 360 degree |
 | combine | Calculate sum and plot all data over the period of 360 degree |  
 | excel | Combine and export all data field of input arguments to xlsx |  
 
 Example (number of inputs is arbitrary):
+
+&gt;&gt; combinedtorque(cam1,cam2,cam3)
+![image](https://github.com/quyhoang/CamDesign/assets/14304980/4c106930-16e4-4971-9868-96c6ff7fff11)
 
 &gt;&gt; combine(cam1.torque.data,cam2.torque.data,cam3.torque.data)
 
 ![Combine](https://github.com/quyhoang/CamDesign/assets/14304980/74afc908-dc0e-45c5-b250-a068f1aafb32)
 
 &gt;&gt; excel('outputfile',cam1.motorTorque,cam1.velocity,cam1.displacement)
+
 
 <p align="center">
   <img src="https://github.com/quyhoang/CamDesign/assets/14304980/6075e723-1075-4ba2-8d57-ce95c1ded13b" alt="Excel" width="400" />
@@ -415,10 +420,14 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 | メソッド  | 説明  | 
 | :------------: |:---------------:| 
+| combinetorque | 360度の周期にわたる複数のカムによって必要とされるトルクの合計を計算します |
 | combine | 360度の期間にわたるすべてのデータの合計とプロットを計算 |  
 | excel | 入力引数のすべてのデータフィールドを組み合わせてxlsxにエクスポート |  
 
 例（入力の数は任意）：
+
+&gt;&gt; combinedtorque(cam1,cam2,cam3)
+![image](https://github.com/quyhoang/CamDesign/assets/14304980/4c106930-16e4-4971-9868-96c6ff7fff11)
 
 &gt;&gt; combine(cam1.torque.data,cam2.torque.data,cam3.torque.data)
 
