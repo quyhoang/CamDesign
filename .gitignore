@@ -1,4 +1,5 @@
 *.mat
 *.asv
 *.csv
+*.xlsx
 camProfile.txt
