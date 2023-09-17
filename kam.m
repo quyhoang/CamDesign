@@ -100,7 +100,7 @@ classdef kam  < handle
             % Calculating cam dynamic properties
             obj = obj.calculate_displacement(); % Follower displacement
             obj = obj.calculate_load_displacement(); % Load displacement
-            obj = obj.calculate_velocity(); 
+            obj = obj.calculate_velocity();
             obj = obj.calculate_acceleration();
 
             obj = obj.calculate_roller_position();
@@ -204,21 +204,44 @@ classdef kam  < handle
             filtered_pairs = filtered_pairs(1:count, :);
         end
 
-        function s(obj)
-            % Plot position vs angle in cartesian coordinate
+function s(obj)
+    % Plot position vs angle in cartesian coordinate
+    A = obj.transition;
+    % Plot the points
 
-            figure;
-            plot(obj.theta,obj.load_displacement.data);
-            grid on;
-            grid minor;
-            xlim([0 360]);
-            xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
-            ylim([-2*obj.fullStroke + obj.fullStroke/2 2*obj.fullStroke + obj.fullStroke/2]);
-            ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
-            [tit,] = title({'';'S Diagram'},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
-                'Color','blue');
-            tit.FontSize = 15;
-        end
+    figure;
+    hold on;            
+    grid on;
+    grid minor;
+
+    plot(obj.theta,obj.load_displacement.data);
+    xlim([0 360]);
+    xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
+    ylim([min(obj.load_displacement.data)-0.2*obj.fullStroke max(obj.load_displacement.data)+0.2*obj.fullStroke]);
+    ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
+
+    % Setting custom x and y tick values
+    xTicks = unique([0; A(:,1); 360]);
+    yTicks = unique(A(:,2));
+    xticks(xTicks);
+    yticks(yTicks);
+
+    scatter(A(:,1), A(:,2), 'r', 'filled'); % scatter plot with red filled markers
+
+    % Loop through each point in A
+    for i = 1:size(A,1)
+        % Draw dotted lines to the axes
+        line([A(i,1), A(i,1)], [0, A(i,2)], 'LineStyle', ':', 'Color', 'b');
+        line([0, A(i,1)], [A(i,2), A(i,2)], 'LineStyle', ':', 'Color', 'b');
+    end
+   
+    [tit,] = title({'';'S Diagram'},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
+        'Color','blue');
+    tit.FontSize = 15;
+end
+
+
+
 
         function obj = calculate_velocity(obj)
             % velocity.data with respect to time
@@ -464,10 +487,10 @@ classdef kam  < handle
 
         function torque(obj)
             % Show motor torque
-            
+
             figure;
             plot(obj.theta,obj.motorTorque.data);
-            xlabel('角度') ; 
+            xlabel('角度') ;
             xlim([0 360]);
             ylabel('トルク (Nm)') ;
             torqueTitle = strcat('最大トルク  ', num2str(max(obj.motorTorque.data)),' Nm');
@@ -492,7 +515,7 @@ classdef kam  < handle
         calculate_spring_force(obj)
         % Calculate the minimum force the spring must exert to keep the
         % cam and the follower always in contact
-   
+
         calculate_motor_torque(obj)
     end
 

@@ -117,7 +117,7 @@ To summarize, for example, if you work with the cam object named cam and the att
 | cam.velocity.export     | export to xlsx   |    
 
 
-Because some plot are frequenly viewed, there are shortcuts to quickly create their plot.
+There are shortcuts to plot some frequently used data.
 
 For example, if the cam object name is cam.
 
