@@ -24,10 +24,9 @@ A program supporting mechanical designers in the seamless development of planar 
 - Machining process visualization
 - Effortless cam profile data transfer for CAD model generation
 - Utilizing modified sinusoidal characteristic curves
-- Rapid cam validity verification
+- Rapid cam system verification
 - In-depth cam motion simulation with detailed data at each rotational angle to ensure the manufactured cam delivers the expected motion
-- Simple syntax
-- Easy to use (the program is written with Matlab OOP)
+- Intuitive syntax and user-friendly design (implemented through Matlab OOP)
 - Free (can be used with Matlab online)
 
 ## Functionality
@@ -177,7 +176,7 @@ Example:
 
 最大圧力角: -9.422 °
 
-最大モータートルク: 2.056 N/m
+最大モータートルク: 2.056 Nm
 
 最小曲率半径: 35.2866 mm
 
@@ -259,18 +258,16 @@ Thank you for visiting this project. Feel free to contribute and make this proje
 
 ## 機能
 
-
 - 両方の平行移動カムと振動カムをサポート
 - 複数の滞在動作をサポート
-- xlsxフォーマットへのデータの簡単なエクスポート
+- xlsxフォーマットへのデータ簡単エクスポート
 - 効率的なデータビジュアライゼーション
 - 加工プロセスの視覚化
 - CADモデル生成のためのカムプロファイルデータの簡単な転送
 - 修正された正弦特性曲線の利用
-- カム有効性の迅速な検証
-- 製造されたカムが期待される動きを提供することを保証するための各回転角での詳細なデータを提供する深いカムモーションシミュレーション
-- シンプルな構文
-- 使いやすい（プログラムはMatlab OOPで書かれています）
+- カムシステムの迅速な検証
+- 製造されたカムが期待される動きを提供することを保証するための各回転角での詳細なデータを含む深いカムモーションシミュレーション
+- 直感的な構文とユーザーフレンドリーな設計（Matlab OOPを通じて実装）
 - 無料（Matlabオンラインで使用可能）
 
 ## 機能性
@@ -416,7 +413,7 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 最大圧力角: -9.422 °
 
-最大モータートルク: 2.056 N/m
+最大モータートルク: 2.056 Nm
 
 最小曲率半径: 35.2866 mm
 
