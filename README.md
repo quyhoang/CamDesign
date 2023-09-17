@@ -17,6 +17,15 @@ A program supporting mechanical designers in the seamless development of planar 
 
 ## Features
 
+- Support both translating cam and oscillating cam
+- Support multi-dwells motion
+- Easy exportation of data to xlsx format
+- Streamlined data visualization
+- Mchining process visualization
+- Effortless cam profile data transfer for CAD model generation
+- Utilizing modified sinusoidal characteristic curves
+- Rapid cam validity verification
+- In-depth cam motion simulation with detailed data at each rotational angle to ensure the manufactured cam delivers the expected motion
 - Simple syntax
 - Easy to use (the program is written with Matlab OOP)
 - Free (can be used with Matlab online)
@@ -250,6 +259,16 @@ Thank you for visiting this project. Feel free to contribute and make this proje
 
 ## 機能
 
+
+- 両方の平行移動カムと振動カムをサポート
+- 複数の滞在動作をサポート
+- xlsxフォーマットへのデータの簡単なエクスポート
+- 効率的なデータビジュアライゼーション
+- 加工プロセスの視覚化
+- CADモデル生成のためのカムプロファイルデータの簡単な転送
+- 修正された正弦特性曲線の利用
+- カム有効性の迅速な検証
+- 製造されたカムが期待される動きを提供することを保証するための各回転角での詳細なデータを提供する深いカムモーションシミュレーション
 - シンプルな構文
 - 使いやすい（プログラムはMatlab OOPで書かれています）
 - 無料（Matlabオンラインで使用可能）
