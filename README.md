@@ -21,7 +21,7 @@ A program supporting mechanical designers in the seamless development of planar 
 - Support multi-dwells motion
 - Easy exportation of data to xlsx format
 - Streamlined data visualization
-- Mchining process visualization
+- Machining process visualization
 - Effortless cam profile data transfer for CAD model generation
 - Utilizing modified sinusoidal characteristic curves
 - Rapid cam validity verification
