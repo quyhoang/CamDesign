@@ -139,7 +139,7 @@ A figure will be generated. This figure can be added to mechanical drawings, ser
 
 ![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/f9148cd6-536f-4915-b9f8-cd9e2de28756)
 
-Note: For oscillating cam, the displacement of the follower (displacement) is used to determine cam profile. The displacement of the load (load_displacement) is not important.
+Note: For oscillating cam, the displacement of the follower (obj.displacement) is used to determine cam profile. The displacement of the load (obj.load_displacement) is not important.
 
 
 #### other attributes
