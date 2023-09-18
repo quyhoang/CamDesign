@@ -134,7 +134,10 @@ Example:
 
 **&gt;&gt;cam.s**
 
-![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/7a1bf424-3ca1-4744-82fc-e9cc1e22b92f)
+A figure will be generated. This figure can be added to mechanical drawings, serving as a reference for the cam machining process.
+
+![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/f9148cd6-536f-4915-b9f8-cd9e2de28756)
+
 
 
 #### other attributes
@@ -372,7 +375,9 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 **&gt;&gt;cam.s**
 
-![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/7a1bf424-3ca1-4744-82fc-e9cc1e22b92f)
+図が生成されます。この図は、メカニカル図面に追加でき、カム加工プロセスの参照として機能します
+
+![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/f9148cd6-536f-4915-b9f8-cd9e2de28756)
 
 
 #### 他の属性
