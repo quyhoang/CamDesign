@@ -124,6 +124,7 @@ For example, if the cam object name is cam.
 | Data to plot  | Standard method | Shortcut |
 | :------------: |:---------------:| :-------------:|
 | load_displacement | cam.load_displacement.show |   cam.s  |
+| displacement | cam.displacement.show |   cam.d  |
 | velocity      | cam.velocity.show        |          cam.v  |
 | acceleration     | cam.acceleration.show   |          cam.a    |
 | curvature     | cam.curvature.show   |          cam.c   |
@@ -138,6 +139,7 @@ A figure will be generated. This figure can be added to mechanical drawings, ser
 
 ![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/f9148cd6-536f-4915-b9f8-cd9e2de28756)
 
+Note: For oscillating cam, the displacement of the follower (displacement) is used to determine cam profile. The displacement of the load (load_displacement) is not important.
 
 
 #### other attributes
@@ -366,6 +368,7 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 | データをプロット  | 標準方法 | ショートカット |
 | :------------: |:---------------:| :-------------:|
 | load_displacement | cam.load_displacement.show |   cam.s  |
+| displacement | cam.displacement.show |   cam.d  |
 | velocity      | cam.velocity.show        |          cam.v  |
 | acceleration     | cam.acceleration.show   |          cam.a    |
 | curvature     | cam.curvature.show   |          cam.c   |
@@ -380,6 +383,7 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 ![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/f9148cd6-536f-4915-b9f8-cd9e2de28756)
 
+注意: 振動カムの場合、フォロワーの変位（obj.displacement）がカムプロファイルを決定するために使用されます。負荷の変位（obj.load_displacement）は重要ではありません。
 
 #### 他の属性
 
