@@ -70,7 +70,7 @@ ocam is for oscillating cam. tcam is for translating cam.
 
 Example:
 
-&gt;&gt;mycam = ocam('mycamname');
+**&gt;&gt;mycam = ocam('mycamname');**
 
 The command above will looking for mycamname_transition.txt and mycamname_parameter.txt and create a cam object using the information in those two files.
 
@@ -170,7 +170,7 @@ Example:
 
 **camCheck**
 
-&gt;&gt; cam.camCheck
+**&gt;&gt; cam.camCheck**
  
 最大速度: 188.2804 mm/s
 
@@ -186,13 +186,13 @@ Example:
 
 **machining**
 
-&gt;&gt; cam.machining
+**&gt;&gt; cam.machining**
 
 ![machining](https://github.com/quyhoang/CamDesign/assets/14304980/37c860e6-1c02-4926-b0b2-8c1b002593fd)
 
 **animation**
 
-&gt;&gt; cam.animation
+**&gt;&gt; cam.animation**
 
 ![animation](https://github.com/quyhoang/CamDesign/assets/14304980/2901a0c3-8ecc-4e01-9e58-96f2e816ddf8)
 
@@ -207,14 +207,15 @@ Example:
 
 Example (number of inputs is arbitrary):
 
-&gt;&gt; combinedtorque(cam1,cam2,cam3)
+**&gt;&gt; combinedtorque(cam1,cam2,cam3)**
+
 ![image](https://github.com/quyhoang/CamDesign/assets/14304980/4c106930-16e4-4971-9868-96c6ff7fff11)
 
-&gt;&gt; combine(cam1.torque.data,cam2.torque.data,cam3.torque.data)
+**&gt;&gt; combine(cam1.torque.data,cam2.torque.data,cam3.torque.data)**
 
 ![Combine](https://github.com/quyhoang/CamDesign/assets/14304980/74afc908-dc0e-45c5-b250-a068f1aafb32)
 
-&gt;&gt; excel('outputfile',cam1.motorTorque,cam1.velocity,cam1.displacement)
+**&gt;&gt; excel('outputfile',cam1.motorTorque,cam1.velocity,cam1.displacement)**
 
 
 <p align="center">
@@ -313,7 +314,7 @@ ocamは振動カム用です。tcamは移動カム用です。
 
 例：
 
-&gt;&gt;mycam = ocam('mycamname');
+**&gt;&gt;mycam = ocam('mycamname');**
 
 上記のコマンドは、mycamname_transition.txtとmycamname_parameter.txtを検索し、それら2つのファイルの情報を使用してカムオブジェクトを作成します。
 
@@ -409,7 +410,7 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 **camCheck**
 
-&gt;&gt; cam.camCheck
+**&gt;&gt; cam.camCheck**
  
 最大速度: 188.2804 mm/s
 
@@ -425,13 +426,13 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 **machining**
 
-&gt;&gt; cam.machining
+**&gt;&gt; cam.machining**
 
 ![machining](https://github.com/quyhoang/CamDesign/assets/14304980/37c860e6-1c02-4926-b0b2-8c1b002593fd)
 
 **animation**
 
-&gt;&gt; cam.animation
+**&gt;&gt; cam.animation**
 
 ![animation](https://github.com/quyhoang/CamDesign/assets/14304980/2901a0c3-8ecc-4e01-9e58-96f2e816ddf8)
 
@@ -446,14 +447,14 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 例（入力の数は任意）：
 
-&gt;&gt; combinedtorque(cam1,cam2,cam3)
+**&gt;&gt; combinedtorque(cam1,cam2,cam3)**
 ![image](https://github.com/quyhoang/CamDesign/assets/14304980/4c106930-16e4-4971-9868-96c6ff7fff11)
 
-&gt;&gt; combine(cam1.torque.data,cam2.torque.data,cam3.torque.data)
+**&gt;&gt; combine(cam1.torque.data,cam2.torque.data,cam3.torque.data)**
 
 ![Combine](https://github.com/quyhoang/CamDesign/assets/14304980/74afc908-dc0e-45c5-b250-a068f1aafb32)
 
-&gt;&gt; excel('outputfile',cam1.motorTorque,cam1.velocity,cam1.displacement)
+**&gt;&gt; excel('outputfile',cam1.motorTorque,cam1.velocity,cam1.displacement)**
 
 <p align="center">
   <img src="https://github.com/quyhoang/CamDesign/assets/14304980/6075e723-1075-4ba2-8d57-ce95c1ded13b" alt="Excel" width="400" />
