@@ -204,43 +204,105 @@ classdef kam  < handle
             filtered_pairs = filtered_pairs(1:count, :);
         end
 
-function s(obj)
-    % Plot position vs angle in cartesian coordinate
-    A = obj.transition;
-    % Plot the points
+        function s(obj)
+            % Plot position vs angle in cartesian coordinate
+            A = obj.transition;
+            % Plot the points
 
-    figure;
-    hold on;            
-    grid on;
-    grid minor;
+            screenSize = get(0, 'ScreenSize');
+            figWidth = 1000;
+            figHeight = 800;
+            left = (screenSize(3) - figWidth) / 2;
+            bottom = (screenSize(4) - figHeight) / 2;
+            fig = figure('Position', [left, bottom, figWidth, figHeight]); % Set custom figure size centered on screen
+            ax1 = axes('Position', [0.13, 0.11, 0.775, 0.715]);
+            ax1.FontSize = 12; % Adjust the font size here
+            hold on;
+            grid on;
+            grid minor;
 
-    plot(obj.theta,obj.load_displacement.data);
-    xlim([0 360]);
-    xlabel({'回転角度','degree'},'FontSize',15,'FontWeight','light','Color','b');
-    ylim([min(obj.load_displacement.data)-0.2*obj.fullStroke max(obj.load_displacement.data)+0.2*obj.fullStroke]);
-    ylabel({'位置','mm'},'FontSize',15,'FontWeight','light','Color','b');
+            plot(obj.theta,obj.load_displacement.data,'LineWidth',2);
+            xlim([0 360]);
+            xlabel({'回転角度 (度)'},'FontSize',15,'FontWeight','light','Color','b');
+            ylim([min(obj.load_displacement.data)-0.2*obj.fullStroke max(obj.load_displacement.data)+0.2*obj.fullStroke]);
+            ylabel({'位置　(mm)'},'FontSize',15,'FontWeight','light','Color','b');
 
-    % Setting custom x and y tick values
-    xTicks = unique([0; A(:,1); 360]);
-    yTicks = unique(A(:,2));
-    xticks(xTicks);
-    yticks(yTicks);
+            % Setting custom x and y tick values
+            xTicks = unique(A(:,1));
+            yTicks = unique(A(:,2));
+            xticks(xTicks);
+            yticks(yTicks);
 
-    scatter(A(:,1), A(:,2), 'r', 'filled'); % scatter plot with red filled markers
+            scatter(A(:,1), A(:,2), 'r', 'filled'); % scatter plot with red filled markers
 
-    % Loop through each point in A
-    for i = 1:size(A,1)
-        % Draw dotted lines to the axes
-        line([A(i,1), A(i,1)], [0, A(i,2)], 'LineStyle', ':', 'Color', 'b');
-        line([0, A(i,1)], [A(i,2), A(i,2)], 'LineStyle', ':', 'Color', 'b');
-    end
-   
-    [tit,] = title({'';'S Diagram'},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
-        'Color','blue');
-    tit.FontSize = 15;
-end
+            % Loop through each point in A
+            for i = 1:size(A,1)
+                % Draw dotted lines to the axes
+                line([A(i,1), A(i,1)], [0, A(i,2)], 'LineStyle', ':', 'Color', 'b');
+                line([0, A(i,1)], [A(i,2), A(i,2)], 'LineStyle', ':', 'Color', 'b');
+            end
+
+            ax2 = axes('Position', [0.13, 0.11, 0.775, 0.715], 'XAxisLocation', 'top', 'YAxisLocation', 'right', 'Color', 'none', 'YTick', []); % Adjusted position
+            ax2.FontSize = 12;
+            xlim(ax2, [0 360]); % set the x-limits for the top axes
+            set(ax2, 'XTick', 0:60:360); % set the x-tick values for the top axes
 
 
+
+            [tit,] = title({'';'Load S Diagram'},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
+                'Color','blue');
+            tit.FontSize = 15;
+        end
+
+
+      function d(obj)
+            % Plot position vs angle in cartesian coordinate
+            A = obj.transition;
+            A(:,2) = obj.transition_displacement(2:length(obj.transition_displacement)-1);
+            % Plot the points
+
+            screenSize = get(0, 'ScreenSize');
+            figWidth = 1000;
+            figHeight = 800;
+            left = (screenSize(3) - figWidth) / 2;
+            bottom = (screenSize(4) - figHeight) / 2;
+            fig = figure('Position', [left, bottom, figWidth, figHeight]); % Set custom figure size centered on screen
+            ax1 = axes('Position', [0.13, 0.11, 0.775, 0.715]);
+            ax1.FontSize = 12; % Adjust the font size here
+            hold on;
+            grid on;
+            grid minor;
+
+            plot(obj.theta,obj.displacement.data,'LineWidth',2);
+            xlim([0 360]);
+            xlabel({'回転角度 (度)'},'FontSize',15,'FontWeight','light','Color','b');
+            ylim([min(obj.displacement.data)-0.2*obj.fullStroke max(obj.displacement.data)+0.2*obj.fullStroke]);
+            ylabel({'位置　(mm)'},'FontSize',15,'FontWeight','light','Color','b');
+
+            % Setting custom x and y tick values
+            xTicks = unique(A(:,1));
+            yTicks = unique(A(:,2));
+            xticks(xTicks);
+            yticks(yTicks);
+
+            scatter(A(:,1), A(:,2), 'r', 'filled'); % scatter plot with red filled markers
+
+            % Loop through each point in A
+            for i = 1:size(A,1)
+                % Draw dotted lines to the axes
+                line([A(i,1), A(i,1)], [0, A(i,2)], 'LineStyle', ':', 'Color', 'b');
+                line([0, A(i,1)], [A(i,2), A(i,2)], 'LineStyle', ':', 'Color', 'b');
+            end
+
+            ax2 = axes('Position', [0.13, 0.11, 0.775, 0.715], 'XAxisLocation', 'top', 'YAxisLocation', 'right', 'Color', 'none', 'YTick', []); % Adjusted position
+            ax2.FontSize = 12;
+            xlim(ax2, [0 360]); % set the x-limits for the top axes
+            set(ax2, 'XTick', 0:60:360); % set the x-tick values for the top axes
+
+            [tit,] = title({''; 'Follower S Diagram'},{['モーター回転速度 ',num2str(obj.RPM),'rpm   ','T = ', num2str(obj.T),'s'];''},...
+                'Color','blue');
+            tit.FontSize = 15;
+        end
 
 
         function obj = calculate_velocity(obj)
