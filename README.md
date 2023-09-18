@@ -134,9 +134,7 @@ Example:
 
 **&gt;&gt;cam.s**
 
-
-
-![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/d42ddb4b-c2c6-48db-8092-a87294f120f1)
+![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/7a1bf424-3ca1-4744-82fc-e9cc1e22b92f)
 
 
 #### other attributes
@@ -374,7 +372,7 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 **&gt;&gt;cam.s**
 
-![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/d42ddb4b-c2c6-48db-8092-a87294f120f1)
+![displacement](https://github.com/quyhoang/CamDesign/assets/14304980/7a1bf424-3ca1-4744-82fc-e9cc1e22b92f)
 
 
 #### 他の属性
