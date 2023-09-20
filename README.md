@@ -26,7 +26,7 @@ This integrated approach to cam design consists of three steps:
 
 - Now that you have a 3D model of the cam, simply assemble it into your assembly and create a mechanism with Creo.
 
-  [PTC ヘルプセンター](https://support.ptc.com/help/creo/creo_pma/r10.0/japanese/index.html#page/simulate/mech_des/mdx_kin_workflow.html#)
+  [PTC Mechanism](https://support.ptc.com/help/creo/creo_pma/r10.0/usascii/index.html#page/simulate/mech_des/Mechanism_Design_and_Mechanism_Dynamics_Overview.html)
 
 ---
 
