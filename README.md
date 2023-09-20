@@ -11,7 +11,7 @@ This integrated approach to cam design consists of three steps:
 
 - A MATLAB program available in this repository will assist you in this task.
       
-- If you have MATLAB installed on your local machine, set the working directory of MATLAB to be the same as the working directory of Creo Parametric and start working. Alternatively, you can design the cam using MATLAB online by visiting MATLAB Login | MATLAB & Simulink.
+- If you have MATLAB installed on your local machine, set the working directory of MATLAB to be the same as the working directory of Creo Parametric and start working. Alternatively, you can design the cam using MATLAB online.
     
     [MATLAB Login | MATLAB & Simulink](https://matlab.mathworks.com/)
     
