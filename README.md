@@ -5,6 +5,34 @@
 
 A program supporting mechanical designers in the seamless development of planar oscillating and translating cam systems.
 
+This integrated approach to cam design consists of three steps:
+
+## **Designing the cam, tuning the parameters, and verifying the cam.**
+
+- A MATLAB program available in this repository will assist you in this task.
+      
+- If you have MATLAB installed on your local machine, set the working directory of MATLAB to be the same as the working directory of Creo Parametric and start working. Alternatively, you can design the cam using MATLAB online by visiting MATLAB Login | MATLAB & Simulink.
+    
+    [MATLAB Login | MATLAB & Simulink](https://matlab.mathworks.com/)
+    
+
+## **Generating 3D models of the cam.**
+
+- Ensure that `CreoAutomation.exe` is running or that the separated program `cam_design.exe` / `cam_design.ahk` is running.
+- Make sure that the data files `camprofile.txt` and `direction.txt` are in your working directory. These files are created when you run the export method of a cam object (`obj.export`) in MATLAB. If you use MATLAB online, download those files into your Creo working directory.
+- Type `gcam`, and the 3D model will be automatically created.
+
+## **Running simulation using Creo Mechanism.**
+
+- Now that you have a 3D model of the cam, simply assemble it into your assembly and create a mechanism with Creo.
+
+  [PTC ヘルプセンター](https://support.ptc.com/help/creo/creo_pma/r10.0/japanese/index.html#page/simulate/mech_des/mdx_kin_workflow.html#)
+
+---
+
+
+
+
 ## Table of Contents
 
 1. [Introduction](#introduction)
@@ -250,6 +278,28 @@ Thank you for visiting this project. Feel free to contribute and make this proje
 ## はじめに
 
 平面振動カムおよび移動カムの設計を支援するプログラム。
+
+
+このカムデザインの統合アプローチは、次の3つのステップで構成されています：
+
+## **カムの設計、パラメータの調整、およびカムの検証**
+
+- この作業をサポートするために、MATLABプログラムが利用可能です。プログラムとその使用方法については、このGitHubリポジトリにあります。
+    
+- もしローカルマシンにMATLABがインストールされている場合は、MATLABの作業ディレクトリをCreo Parametricの作業ディレクトリと同じに設定して作業を開始してください。MATLABを使用せずにカムを設計する場合は、MATLAB Onlineを利用することもできます。MATLAB Onlineにアクセスするには、[MATLAB Login | MATLAB & Simulink](https://matlab.mathworks.com/) にアクセスしてください。
+
+  [MATLAB Login | MATLAB & Simulink](https://matlab.mathworks.com/)
+
+## **カムの3Dモデルを生成**
+
+- `CreoAutomation.exe` が実行されているか、別のプログラム `cam_design.exe` / `cam_design.ahk`が実行されていることを確認してください。
+- データファイル `camprofile.txt` と `direction.txt` が作業ディレクトリにあることを確認してください。これらのファイルは、MATLABでカムオブジェクト（obj.export）のエクスポートメソッドを実行すると作成されます。MATLAB Onlineを使用する場合は、これらのファイルをCreo作業ディレクトリにダウンロードしてください。
+- `gcam`と入力すると、3Dモデルが自動的に作成されます。
+
+## **Creo Mechanismを使用したシミュレーションの実行**
+
+- カムの3Dモデルができたら、それをアセンブリに組み立ててCreoでメカニズムを作成します。Creo Mechanism のチュートリアルはオンラインで入手できます。
+  [PTC Mechanism]([https://support.ptc.com/help/creo/creo_pma/r10.0/usascii/index.html#page/simulate/mech_des/Mechanism_Design_and_Mechanism_Dynamics_Overview.html#)
 
 ## 目次
 
