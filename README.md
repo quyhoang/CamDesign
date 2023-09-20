@@ -286,7 +286,7 @@ Thank you for visiting this project. Feel free to contribute and make this proje
 
 - この作業をサポートするために、MATLABプログラムが利用可能です。プログラムとその使用方法については、このGitHubリポジトリにあります。
     
-- もしローカルマシンにMATLABがインストールされている場合は、MATLABの作業ディレクトリをCreo Parametricの作業ディレクトリと同じに設定して作業を開始してください。MATLABを使用せずにカムを設計する場合は、MATLAB Onlineを利用することもできます。MATLAB Onlineにアクセスするには、[MATLAB Login | MATLAB & Simulink](https://matlab.mathworks.com/) にアクセスしてください。
+- もしローカルマシンにMATLABがインストールされている場合は、MATLABの作業ディレクトリをCreo Parametricの作業ディレクトリと同じに設定して作業を開始してください。MATLABを使用せずにカムを設計する場合は、MATLAB Onlineを利用することもできます。
 
   [MATLAB Login | MATLAB & Simulink](https://matlab.mathworks.com/)
 
@@ -299,9 +299,8 @@ Thank you for visiting this project. Feel free to contribute and make this proje
 ## **Creo Mechanismを使用したシミュレーションの実行**
 
 - カムの3Dモデルができたら、それをアセンブリに組み立ててCreoでメカニズムを作成します。Creo Mechanism のチュートリアルはオンラインで入手できます。
-  [PTC Mechanism]([https://support.ptc.com/help/creo/creo_pma/r10.0/usascii/index.html#page/simulate/mech_des/Mechanism_Design_and_Mechanism_Dynamics_Overview.html#)
 
-## 目次
+  [Mechanism Design](https://support.ptc.com/help/creo/creo_pma/r10.0/japanese/index.html#page/simulate/mech_des/Mechanism_Design_and_Mechanism_Dynamics_Overview.html)
 
 1. [はじめに](#はじめに)
 2. [目次](#目次)
