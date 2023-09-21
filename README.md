@@ -237,7 +237,7 @@ Example:
 
 Example (number of inputs is arbitrary):
 
-**&gt;&gt; combinedtorque(cam1,cam2,cam3)**
+**&gt;&gt; combinetorque(cam1,cam2,cam3)**
 
 ![image](https://github.com/quyhoang/CamDesign/assets/14304980/4c106930-16e4-4971-9868-96c6ff7fff11)
 
