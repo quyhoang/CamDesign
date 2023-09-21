@@ -231,13 +231,13 @@ Example:
 
 | Methods  | Explanation  | 
 | :------------: |:---------------:| 
-| combinetorque | Calculate total torque required by multiple cams over the period of 360 degree |
+| combinedtorque | Calculate total torque required by multiple cams over the period of 360 degree |
 | combine | Calculate sum and plot all data over the period of 360 degree |  
 | excel | Combine and export all data field of input arguments to xlsx |  
 
 Example (number of inputs is arbitrary):
 
-**&gt;&gt; combinetorque(cam1,cam2,cam3)**
+**&gt;&gt; combinedtorque(cam1,cam2,cam3)**
 
 ![image](https://github.com/quyhoang/CamDesign/assets/14304980/4c106930-16e4-4971-9868-96c6ff7fff11)
 
@@ -494,7 +494,7 @@ Matlabコマンドコンソールに名前、単位、データを表示する�
 
 | メソッド  | 説明  | 
 | :------------: |:---------------:| 
-| combinetorque | 360度の周期にわたる複数のカムによって必要とされるトルクの合計を計算します |
+| combinedtorque | 360度の周期にわたる複数のカムによって必要とされるトルクの合計を計算します |
 | combine | 360度の期間にわたるすべてのデータの合計とプロットを計算 |  
 | excel | 入力引数のすべてのデータフィールドを組み合わせてxlsxにエクスポート |  
 
